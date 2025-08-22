@@ -1,0 +1,21 @@
+spring.application.name=harudam_backend
+
+sever.port=8080
+
+# DB 설정
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.url=jdbc:postgresql://project-db-campus.smhrd.com:3310/campus_25sw_cx_p3_3
+spring.datasource.username=campus_25sw_cx_p3_3
+spring.datasource.password=smhrd3
+
+# JPA 설정
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+# 파일 업로드 설정
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=40MB
+file.upload-dir=C:/Users/oik/Desktop/skrrrrr/harudam_backend/uploads

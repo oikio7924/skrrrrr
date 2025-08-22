@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+    <fullyQualifiedTypeName name="lombok.Getter"/>
+    <fullyQualifiedTypeName name="org.apache.catalina.realm.JNDIRealm.User"/>
+    <fullyQualifiedTypeName name="org.springframework.boot.autoconfigure.security.SecurityProperties.User"/>
+    <fullyQualifiedTypeName name="org.springframework.security.core.userdetails.User"/>
+    <fullyQualifiedTypeName name="java.io.IOException"/>
+    <fullyQualifiedTypeName name="io.jsonwebtoken.lang.Collections"/>
+    <fullyQualifiedTypeName name="java.util.Collections"/>
+    <fullyQualifiedTypeName name="org.springframework.beans.factory.annotation.Value"/>
+    <fullyQualifiedTypeName name="io.jsonwebtoken.SignatureAlgorithm"/>
+    <fullyQualifiedTypeName name="java.util.Date"/>
+</qualifiedTypeNameHistroy>

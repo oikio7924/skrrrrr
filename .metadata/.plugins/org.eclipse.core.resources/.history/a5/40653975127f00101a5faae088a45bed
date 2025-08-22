@@ -1,0 +1,5 @@
+package com.skrrrrr.harudam.member;
+
+public interface ParentChildLinkRepository {
+
+}

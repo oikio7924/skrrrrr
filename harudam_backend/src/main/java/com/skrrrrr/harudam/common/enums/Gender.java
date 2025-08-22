@@ -1,0 +1,6 @@
+package com.skrrrrr.harudam.common.enums;
+
+public enum Gender {
+	M,
+	F
+}

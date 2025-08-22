@@ -1,0 +1,50 @@
+package com.skrrrrr.harudam.jwt;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // 1. Request Header에서 토큰을 꺼냅니다.
+        String token = resolveToken(request);
+
+        // 2. 토큰이 유효한지 확인합니다.
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            // 토큰이 유효하면 인증 정보를 생성하여 SecurityContext에 저장합니다.
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+            UserDetails userDetails = new User(userId.toString(), "", Collections.emptyList());
+            // 클래스 이름 오타 수정
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+        
+        // 3. 다음 필터로 요청을 전달합니다. (매우 중요!)
+        filterChain.doFilter(request, response);
+    }
+
+    // 4. resolveToken 메서드를 클래스 레벨로 이동시켰습니다.
+    private String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+}

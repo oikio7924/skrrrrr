@@ -1,0 +1,58 @@
+package com.skrrrrr.harudam.jwt;
+
+import java.util.Date;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.skrrrrr.harudam.member.ChildUser;
+import com.sun.org.apache.xml.internal.security.algorithms.SignatureAlgorithm;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+
+
+@Component
+public class JwtTokenProvider {
+
+	private final SecretKey key;
+	private final long accessTokenValidityMilliseconds;
+	
+	// application.properties에 설정한 JWT 비밀키와 만료 시간을 가져옴
+	public JwtTokenProvider (@Value("${jwt.secret}") String secretKey,
+							 @Value("${jwt.expiration}") long accessTokenValidityMilliseconds) {
+		this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+		this.accessTokenValidityMilliseconds = accessTokenValidityMilliseconds;
+	}
+	
+	// ChildUser 정보를 받아 Access Token을 생성한다.
+	public String createAccessToken(ChildUser childUser) {
+		Date now = new Date();
+		Date validity = new Date(now.getTime() + this.accessTokenValidityMilliseconds);
+		
+		return Jwts.builder()
+				.setSubject(String.valueOf(childUser.getId()))
+				.setIssuedAt(now)
+				.signWith(key, SignatureAlgorithm.HS256)
+				.setExpiration(validity)
+				.compact();
+	}
+	
+	// 토큰에서 사용자 ID를 추출한다.
+	public Long getUserIdFromToken(String token) {
+		return Long.parseLong(Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject());
+	}
+	
+	// 토큰의 유효성과 만료일자를 확인한다.
+	public boolean validateToken(String token) {
+		try {
+			Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+			return true;
+		} catch (JwtException | IllegalArgumentException e) {
+			// 토큰이 유효하지 않을 경우 (변조, 만료 등) false를 반환
+			return false;
+		}
+	}
+}
