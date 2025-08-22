@@ -178,10 +178,8 @@ onMounted(async () => {
 
 /** ===== 카카오 로그인 핸들러 ===== */
 async function handleSocialSignup(provider: Provider) {
-  if (provider !== 'kakao') {
-    alert(`현재 ${provider} 가입은 지원되지 않습니다.`)
-    return
-  }
+  if (provider !== 'kakao') return
+
   if (!isKakaoReady.value) {
     alert('카카오 준비 중입니다. .env 설정/서버 재시작을 확인해주세요.')
     return
@@ -192,47 +190,58 @@ async function handleSocialSignup(provider: Provider) {
 
   try {
     const Kakao = getKakao()
-    if (!Kakao) {
-      error.value = 'Kakao SDK를 찾을 수 없습니다.'
-      return
-    }
+    if (!Kakao) throw new Error("SDK 없음")
 
-    // 토큰 초기화
+    // 기존 토큰 정리
     if (Kakao.Auth.getAccessToken()) {
-      await new Promise<void>((r) => Kakao.Auth.logout(() => r()))
+      await new Promise<void>((resolve) => Kakao.Auth.logout(() => resolve()))
     }
 
-    // 로그인
+    // ✅ 로그인 시도 + 타임아웃 안전장치
     await new Promise<void>((resolve, reject) => {
+      let done = false
+
+      // 10초 후 자동 종료 (fail이 안 불릴 때 대비)
+      const timer = setTimeout(() => {
+        if (!done) {
+          loading.value = null
+          reject(new Error("카카오 로그인 응답 없음 (타임아웃)"))
+        }
+      }, 10000)
+
       Kakao.Auth.login({
         scope: 'account_email,profile_nickname',
-        success: () => resolve(),
-        fail: (err: unknown) => reject(err),
+        success: () => {
+          done = true
+          clearTimeout(timer)
+          resolve()
+        },
+        fail: (err) => {
+          done = true
+          clearTimeout(timer)
+          loading.value = null
+          reject(err)
+        },
       })
     })
 
-    // 사용자 정보
-    const user = await new Promise<KakaoUserInfo>((resolve, reject) => {
-      Kakao.API.request({
-        url: '/v2/user/me',
-        success: resolve,
-        fail: reject,
-      })
-    })
+    // 👉 여기까지 오면 로그인 성공
+    console.log("카카오 로그인 성공")
+    const token = Kakao.Auth.getAccessToken()
+    console.log("accessToken:", token)
 
-    profile.value = {
-      provider: 'kakao',
-      id: String(user.id),
-      name: user?.properties?.nickname ?? '사용자',
-      email: user?.kakao_account?.email ?? '',
-    }
-  } catch (e) {
-    console.error(e)
-    error.value = '카카오 로그인 처리 중 오류가 발생했습니다.'
+  } catch (err) {
+    console.error("카카오 로그인 과정에서 에러 발생:", err)
+    error.value = err instanceof Error ? err.message : String(err)
   } finally {
+    // 버튼 원상복구
     loading.value = null
   }
 }
+
+
+
+
 
 /** ===== 유틸 ===== */
 function reset() {

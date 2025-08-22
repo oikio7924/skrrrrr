@@ -140,17 +140,28 @@ async function handleKakaoLogin() {
     alert('카카오 SDK가 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
     return;
   }
-  // ... (이하 카카오 로그인 로직은 동일)
+
   try {
-    const authObj: KakaoAuthResponse = await window.Kakao.Auth.login({
-      scope: 'profile_nickname, account_email',
+    // 1. 로그인 시도
+    const authObj: KakaoAuthResponse = await new Promise((resolve, reject) => {
+      window.Kakao.Auth.login({
+        scope: 'profile_nickname, account_email',
+        success: (res: KakaoAuthResponse) => resolve(res),
+        fail: (err: unknown) => reject(err),
+      });
     });
     console.log('카카오 로그인 성공:', authObj);
 
+    // 2. 토큰 저장
     window.Kakao.Auth.setAccessToken(authObj.access_token);
 
-    const userInfo: KakaoUserInfo = await window.Kakao.API.request({
-      url: '/v2/user/me',
+    // 3. 사용자 정보 요청
+    const userInfo: KakaoUserInfo = await new Promise((resolve, reject) => {
+      window.Kakao.API.request({
+        url: '/v2/user/me',
+        success: (res: KakaoUserInfo) => resolve(res),
+        fail: (err: unknown) => reject(err),
+      });
     });
     console.log('카카오 사용자 정보:', userInfo);
 
@@ -160,6 +171,7 @@ async function handleKakaoLogin() {
     alert('카카오 로그인에 실패했습니다. 개발자 콘솔을 확인해주세요.');
   }
 }
+
 
 // 기타 페이지 이동 함수
 function onFindId() { alert("아이디 찾기 페이지로 이동합니다.") }
