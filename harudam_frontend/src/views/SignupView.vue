@@ -177,11 +177,10 @@ onMounted(async () => {
 })
 
 /** ===== 카카오 로그인 핸들러 ===== */
+/** ===== 카카오 로그인 핸들러 ===== */
 async function handleSocialSignup(provider: Provider) {
-  if (provider !== 'kakao') {
-    alert(`현재 ${provider} 가입은 지원되지 않습니다.`)
-    return
-  }
+  if (provider !== 'kakao') return
+
   if (!isKakaoReady.value) {
     alert('카카오 준비 중입니다. .env 설정/서버 재시작을 확인해주세요.')
     return
@@ -191,48 +190,74 @@ async function handleSocialSignup(provider: Provider) {
   error.value = null
 
   try {
-    const Kakao = getKakao()
-    if (!Kakao) {
-      error.value = 'Kakao SDK를 찾을 수 없습니다.'
-      return
+    const kakao = getKakao()
+    if (!kakao) throw new Error("Kakao SDK 없음")
+
+    // 기존 토큰 정리
+    if (kakao.Auth.getAccessToken()) {
+      await new Promise<void>((resolve) => kakao.Auth.logout(() => resolve()))
     }
 
-    // 토큰 초기화
-    if (Kakao.Auth.getAccessToken()) {
-      await new Promise<void>((r) => Kakao.Auth.logout(() => r()))
-    }
-
-    // 로그인
+    // ✅ 로그인 시도 + 타임아웃 안전장치
     await new Promise<void>((resolve, reject) => {
-      Kakao.Auth.login({
+      let done = false
+      const timer = setTimeout(() => {
+        if (!done) {
+          loading.value = null
+          reject(new Error("카카오 로그인 응답 없음 (타임아웃)"))
+        }
+      }, 10000)
+
+      kakao.Auth.login({
         scope: 'account_email,profile_nickname',
-        success: () => resolve(),
-        fail: (err: unknown) => reject(err),
+        success: () => {
+          done = true
+          clearTimeout(timer)
+          resolve()
+        },
+        fail: (err) => {
+          done = true
+          clearTimeout(timer)
+          loading.value = null
+          reject(err)
+        },
       })
     })
 
-    // 사용자 정보
-    const user = await new Promise<KakaoUserInfo>((resolve, reject) => {
-      Kakao.API.request({
-        url: '/v2/user/me',
-        success: resolve,
-        fail: reject,
-      })
+    // 👉 여기까지 오면 로그인 성공
+    const token = kakao.Auth.getAccessToken()
+    if (!token) throw new Error("카카오 토큰 없음")
+
+    // ✅ 백엔드로 전달
+    const res = await fetch('http://localhost:8080/api/auth/kakao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken: token }),
     })
 
-    profile.value = {
-      provider: 'kakao',
-      id: String(user.id),
-      name: user?.properties?.nickname ?? '사용자',
-      email: user?.kakao_account?.email ?? '',
-    }
-  } catch (e) {
-    console.error(e)
-    error.value = '카카오 로그인 처리 중 오류가 발생했습니다.'
+    if (!res.ok) throw new Error(`백엔드 응답 오류: ${res.status}`)
+
+    const data = (await res.json()) as { jwt: string; isNew: boolean }
+    const { jwt, isNew } = data
+
+    // ✅ 로컬 저장 + 라우팅
+    localStorage.setItem('auth_token', jwt)
+    router.push(isNew ? '/onboarding' : '/home')
+
+    console.log("카카오 로그인 + 백엔드 연동 성공")
+
+  } catch (err) {
+    console.error("카카오 로그인 과정에서 에러 발생:", err)
+    error.value = err instanceof Error ? err.message : String(err)
   } finally {
     loading.value = null
   }
 }
+
+
+
+
+
 
 /** ===== 유틸 ===== */
 function reset() {
@@ -244,6 +269,8 @@ function goBack() {
   router.back()
 }
 console.log('[env] VITE_KAKAO_JS_KEY =', (import.meta.env.VITE_KAKAO_JS_KEY ?? '(undefined)'))
+
+
 
 </script>
 
