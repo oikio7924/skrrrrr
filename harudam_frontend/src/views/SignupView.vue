@@ -177,6 +177,7 @@ onMounted(async () => {
 })
 
 /** ===== 카카오 로그인 핸들러 ===== */
+/** ===== 카카오 로그인 핸들러 ===== */
 async function handleSocialSignup(provider: Provider) {
   if (provider !== 'kakao') return
 
@@ -189,19 +190,17 @@ async function handleSocialSignup(provider: Provider) {
   error.value = null
 
   try {
-    const Kakao = getKakao()
-    if (!Kakao) throw new Error("SDK 없음")
+    const kakao = getKakao()
+    if (!kakao) throw new Error("Kakao SDK 없음")
 
     // 기존 토큰 정리
-    if (Kakao.Auth.getAccessToken()) {
-      await new Promise<void>((resolve) => Kakao.Auth.logout(() => resolve()))
+    if (kakao.Auth.getAccessToken()) {
+      await new Promise<void>((resolve) => kakao.Auth.logout(() => resolve()))
     }
 
     // ✅ 로그인 시도 + 타임아웃 안전장치
     await new Promise<void>((resolve, reject) => {
       let done = false
-
-      // 10초 후 자동 종료 (fail이 안 불릴 때 대비)
       const timer = setTimeout(() => {
         if (!done) {
           loading.value = null
@@ -209,7 +208,7 @@ async function handleSocialSignup(provider: Provider) {
         }
       }, 10000)
 
-      Kakao.Auth.login({
+      kakao.Auth.login({
         scope: 'account_email,profile_nickname',
         success: () => {
           done = true
@@ -226,18 +225,35 @@ async function handleSocialSignup(provider: Provider) {
     })
 
     // 👉 여기까지 오면 로그인 성공
-    console.log("카카오 로그인 성공")
-    const token = Kakao.Auth.getAccessToken()
-    console.log("accessToken:", token)
+    const token = kakao.Auth.getAccessToken()
+    if (!token) throw new Error("카카오 토큰 없음")
+
+    // ✅ 백엔드로 전달
+    const res = await fetch('http://localhost:8080/api/auth/kakao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken: token }),
+    })
+
+    if (!res.ok) throw new Error(`백엔드 응답 오류: ${res.status}`)
+
+    const data = (await res.json()) as { jwt: string; isNew: boolean }
+    const { jwt, isNew } = data
+
+    // ✅ 로컬 저장 + 라우팅
+    localStorage.setItem('auth_token', jwt)
+    router.push(isNew ? '/onboarding' : '/home')
+
+    console.log("카카오 로그인 + 백엔드 연동 성공")
 
   } catch (err) {
     console.error("카카오 로그인 과정에서 에러 발생:", err)
     error.value = err instanceof Error ? err.message : String(err)
   } finally {
-    // 버튼 원상복구
     loading.value = null
   }
 }
+
 
 
 
@@ -253,6 +269,8 @@ function goBack() {
   router.back()
 }
 console.log('[env] VITE_KAKAO_JS_KEY =', (import.meta.env.VITE_KAKAO_JS_KEY ?? '(undefined)'))
+
+
 
 </script>
 
