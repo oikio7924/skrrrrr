@@ -2,13 +2,16 @@ package com.skrrrrr.harudam.auth;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.skrrrrr.harudam.auth.dto.ParentVerifyRequestDto;
 import com.skrrrrr.harudam.auth.dto.SocialLoginRequestDto;
 import com.skrrrrr.harudam.auth.dto.TokenDto;
+import com.skrrrrr.harudam.common.enums.SocialLogin;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,10 +23,21 @@ public class AuthController {
 	
 	private final AuthService authService;
 	
-	@PostMapping("/social-login")
-	public ResponseEntity<TokenDto> socialLogin(@RequestBody SocialLoginRequestDto requestDto) {
-		TokenDto tokenDto = authService.socialLogin(requestDto);
+	@PostMapping("/login/{provider}")
+	public ResponseEntity<TokenDto> login(
+			@PathVariable("provider") SocialLogin provider,
+			@RequestBody SocialLoginRequestDto requestDto){
+		
+		TokenDto tokenDto = authService.socialLogin(provider, requestDto.getAccessToken());
 		return ResponseEntity.ok(tokenDto);
+	}
+	
+	@PostMapping("/verify-code")
+	public ResponseEntity<Boolean> verifyParentCode(
+			@RequestBody ParentVerifyRequestDto requestDto){
+		
+		boolean success = authService.verifyParentCode(requestDto.getCode());
+		return ResponseEntity.ok(success);
 	}
 
 }

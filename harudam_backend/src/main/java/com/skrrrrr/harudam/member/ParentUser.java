@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserStatus;
+import com.skrrrrr.harudam.common.enums.UserType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,6 +49,14 @@ public class ParentUser {
 	
 	@Column(columnDefinition = "text")
 	private String address;
+	
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private UserStatus status = UserStatus.PENDING;
+	
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = true, length = 20)
+	private UserType userType = UserType.PARENT;
 	
 	private ZonedDateTime lastConversationAt;
 	
