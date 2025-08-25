@@ -8,6 +8,5 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SocialLoginRequestDto {
-	private SocialLogin provider;
-	private String code;
+	private String accessToken;
 }

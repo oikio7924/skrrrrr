@@ -1,53 +1,93 @@
 package com.skrrrrr.harudam.jwt;
 
-import com.skrrrrr.harudam.member.ChildUser;
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
+import java.util.Date;
+
+import javax.crypto.SecretKey;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.util.Date;
+import com.skrrrrr.harudam.member.ChildUser;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtTokenProvider {
 
     private final SecretKey key;
     private final long accessTokenValidityInMilliseconds;
+    private final long refreshTokenValidityInMilliseconds;
 
-    // application.properties에 설정한 JWT 비밀키와 만료 시간을 가져옵니다.
-    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey,
-                            @Value("${jwt.expiration}") long accessTokenValidityInMilliseconds) {
+    public JwtTokenProvider(
+            @Value("${jwt.secret}") String secretKey,
+            @Value("${jwt.expiration}") long accessTokenValidityInMilliseconds,
+            @Value("${jwt.refresh-expiration:1209600000}") long refreshTokenValidityInMilliseconds // 기본 14일
+    ) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
         this.accessTokenValidityInMilliseconds = accessTokenValidityInMilliseconds;
+        this.refreshTokenValidityInMilliseconds = refreshTokenValidityInMilliseconds;
     }
 
-    // ChildUser 정보를 받아 Access Token을 생성합니다.
+    // Access Token 생성
     public String createAccessToken(ChildUser childUser) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + this.accessTokenValidityInMilliseconds);
 
         return Jwts.builder()
-                .setSubject(String.valueOf(childUser.getId())) // 토큰의 주체(subject)를 자녀의 고유 ID로 설정
+                .setSubject(String.valueOf(childUser.getId()))	// 사용자 ID
+                .claim("role", childUser.getUserType().name()) 	// CHILD | PARENT
+                .claim("ststus", childUser.getStatus().name())	// PENDING | ACTIVE | INACTIVE
                 .setIssuedAt(now)
-                .signWith(key, SignatureAlgorithm.HS256)
                 .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // 토큰에서 사용자 ID를 추출합니다.
-    public Long getUserIdFromToken(String token) {
-        return Long.parseLong(Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject());
-    }
+    // Refresh Token 생성
+    public String createRefreshToken(ChildUser childUser) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + this.refreshTokenValidityInMilliseconds);
 
-    // 토큰의 유효성과 만료일자를 확인합니다.
+        return Jwts.builder()
+                .setSubject(String.valueOf(childUser.getId()))
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+    
+    // AccessToken 만료까지 남은 시간 (초 단위)
+    public long getAccessTokenExpiresInSeconds() {
+        return this.accessTokenValidityInMilliseconds / 1000;
+    }
+    
+    // RefreshToken 만료 까지 남은 시간 (초 단위)
+    public long getRefreshTokenExpiresInSeconds() {
+        return this.refreshTokenValidityInMilliseconds / 1000;
+    }
+    
+    // 토큰에서 사용자 ID 추출
+    public Long getUserIdFromToken(String token) {
+        return Long.parseLong(
+                Jwts.parserBuilder()
+                        .setSigningKey(key)
+                        .build()
+                        .parseClaimsJws(token)
+                        .getBody()
+                        .getSubject()
+        );
+    }
+    
+    // 토큰 유효성 검증
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            // 토큰이 유효하지 않을 경우 (변조, 만료 등) false를 반환합니다.
-            return false;
+            return false; // 토큰이 유효하지 않으면 false
         }
     }
 }
