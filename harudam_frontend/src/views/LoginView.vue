@@ -55,9 +55,7 @@
         <button class="social-btn google" aria-label="구글로 로그인" disabled>
           <img src="@/assets/social_login_logo/google_logo.png" alt="구글" />
         </button>
-        <button class="social-btn apple" aria-label="애플로 로그인" disabled>
-          <img src="@/assets/social_login_logo/apple_logo.png" alt="애플" />
-        </button>
+
       </div>
     </main>
   </div>

@@ -38,6 +38,18 @@ const router = createRouter({
       component: ParentLogin,
     },
 
+    {
+      path : '/Singupdetail_child',
+      name : 'Singupdetail_child',
+      component : () => import('@/views/SignupdetailView_Child.vue')
+    },
+
+    {
+      path : '/Singupdetail_parent',
+      name : 'Singupdetail_parent',
+      component : () => import('@/views/SignupdetailView_Parent.vue')
+    }
+
 
   ],
 })

@@ -13,11 +13,21 @@ import { RouterView } from 'vue-router'
 
 <!-- src/App.vue -->
 <!-- <script setup lang="ts">
-import SignupdetailView from './views/SignupdetailView.vue'
+import SignupdetailView_Parent from '@/views/SignupdetailView_Parent.vue'
 </script>
 
 <template>
-  <SignupdetailView />
+  <SignupdetailView_Parent />
 </template> -->
+
+
+<!-- <script setup lang="ts">
+import SignupdetailView_Child from '@/views/SignupdetailView_Child.vue'
+</script>
+
+<template>
+  <SignupdetailView_Child />
+</template> -->
+
 
 
