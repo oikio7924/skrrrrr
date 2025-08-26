@@ -6,10 +6,17 @@ import ParentLogin from '@/views/ParentLogin.vue' // 부모용
 import ChatBot from '@/views/ChatBot.vue'
 import PictureDiary from '@/views/PictureDiary.vue'
 import DiaryDetail from '@/views/DiaryDetail.vue'
+<<<<<<< Updated upstream
 import Main_Child from '@/views/Main_Child.vue'
 import FooterNav from '@/components/FooterNav.vue'
 import Calendar_Child from '@/views/Calendar_Child.vue'
 import ProfileDiary from '@/views/ProfileDiary.vue'
+=======
+import MainP from '@/views/MainP.vue'
+import Main_Child from '@/views/Main_Child.vue'
+import FooterNav from '@/views/FooterNav.vue'
+// import FooterNav from '@/views/FooterNav.vue'
+>>>>>>> Stashed changes
 
 
 const router = createRouter({
@@ -91,6 +98,7 @@ const router = createRouter({
     {
       path: '/main_child',
       name: 'main_child',
+<<<<<<< Updated upstream
       component: Main_Child,
       meta: { showFooter: true }
     },
@@ -107,6 +115,9 @@ const router = createRouter({
       name: 'profile_diary',
       component: ProfileDiary,
       meta: { showFooter: true }
+=======
+      component: Main_Child
+>>>>>>> Stashed changes
     },
   ],
 
