@@ -64,8 +64,8 @@ const router = createRouter({
       component: ChatBot
     },
     {
-      path: '/calendar',
-      name: 'calendar',
+      path: '/diary_p',
+      name: 'diary_p',
       component: PictureDiary,
       children: [
         {
@@ -84,10 +84,24 @@ const router = createRouter({
       name: 'footer',
       component: Footer,
     },
+    { path :'/schedule_p',
+      name : 'schedule_p',
+      component : ()=> import('@/views/Schedule_Parent.vue')
+    },
+    {
+      path : '/header',
+      name : 'header',
+      component : () => import('@/views/Header.vue')
+    }
+
   ],
 
 
-  scrollBehavior() { return { top: 0 } }
+ 
+    
+
+
+  scrollBehavior() { return { top: 0 } }  
 
 })
 
