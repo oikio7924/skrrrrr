@@ -6,7 +6,6 @@ import ParentLogin from '@/views/ParentLogin.vue' // 부모용
 import ChatBot from '@/views/ChatBot.vue'
 import PictureDiary from '@/views/PictureDiary.vue'
 import DiaryDetail from '@/views/DiaryDetail.vue'
-import MainP from '@/views/MainP.vue'
 import Footer from '@/views/Footer.vue'
 
 
@@ -56,11 +55,7 @@ const router = createRouter({
       component : () => import('@/views/Signupdetail_Parent.vue')
     },
 
-    {
-      path : '/main_parent',
-      name : 'main_parent',
-      component : () => import('@/views/Main_Parent.vue')
-    },
+    { path: '/mainparent', name: 'MainParent', component: () => import('@/views/Main_Parent.vue')},
 
 
     {
@@ -83,11 +78,6 @@ const router = createRouter({
       ]
     },
     { path: '/day/:date', name: 'dayPage', component: DiaryDetail, props: true },
-    {
-      path : '/main',
-      name : 'main',
-      component : MainP
-    },
 
     {
       path: '/footer',
