@@ -90,7 +90,7 @@ function goLast() {
 
 function finish() {
     localStorage.setItem('harudam_onboarded', '1')
-    router.replace({ name: 'StartView' })   // 필요 시 목적지 바꾸기
+    router.replace({ name: 'Start' })   // 필요 시 목적지 바꾸기
 }
 
 /* 스와이프 */
