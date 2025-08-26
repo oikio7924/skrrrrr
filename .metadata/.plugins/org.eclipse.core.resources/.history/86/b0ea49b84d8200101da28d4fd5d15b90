@@ -1,0 +1,5 @@
+package com.skrrrrr.harudam.config;
+
+public class CorsConfig {
+
+}

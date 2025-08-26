@@ -1,0 +1,15 @@
+package com.skrrrrr.harudam.verification;
+
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Component
+public class DummyAlimtalkSender implements AlimtalkSender{
+	
+	@Override
+	public void sendVerificationCode(String phone, String code, int ttlSeconds) {
+		log.info("[ALIMTALK] To={} Code={} TTL={}s", phone, code, ttlSeconds);
+	}
+}
