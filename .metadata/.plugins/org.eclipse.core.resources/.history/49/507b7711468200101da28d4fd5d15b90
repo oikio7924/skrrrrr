@@ -1,0 +1,255 @@
+package com.skrrrrr.harudam.auth;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.skrrrrr.harudam.auth.dto.TokenDto;
+import com.skrrrrr.harudam.common.enums.SocialLogin;
+import com.skrrrrr.harudam.common.enums.UserType;
+import com.skrrrrr.harudam.jwt.JwtTokenProvider;
+import com.skrrrrr.harudam.member.ChildUser;
+import com.skrrrrr.harudam.member.ChildUserRepository;
+import com.skrrrrr.harudam.member.dto.MemberDto;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 소셜 로그인(현재: 카카오) 실제 구현
+ * - 카카오 토큰 교환 → 사용자 정보 조회 → 우리 서비스 계정 매핑/생성 → JWT 발급 → TokenDto 반환
+ * - (테스트 하드코드는 주석으로 보존)
+ */
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final ChildUserRepository childUserRepository;
+    private final AuthIdentityRepository authIdentityRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    // ⚙️ application.properties 에 추가
+    // kakao.client-id=카카오REST키
+    // kakao.client-secret=카카오ClientSecret(선택)
+    @Value("${kakao.client-id}")
+    private String kakaoClientId;
+
+    @Value("${kakao.client-secret:}")
+    private String kakaoClientSecret;
+
+    // JWT 만료(ms) → 프론트에 초 단위로 내려주기 위함
+    @Value("${jwt.expiration}")
+    private long jwtExpirationMs;
+
+    /**
+     * 카카오 OAuth 콜백에서 받은 code/redirectUri 로 로그인 처리
+     * @param code 인가 코드
+     * @param redirectUri 카카오 앱 설정과 일치하는 리다이렉트 URI
+     */
+    @Transactional
+    public TokenDto loginWithKakaoCode(String code, String redirectUri) {
+        // 1) 인가코드 → 액세스 토큰 교환
+        KakaoTokenResponse token = exchangeKakaoToken(code, redirectUri);
+
+        // =====테스트용 코드 예시=====
+        // KakaoTokenResponse token = new KakaoTokenResponse();
+        // token.accessToken = "test-access";
+        // token.refreshToken = "test-refresh";
+        // token.expiresIn = 3600;
+
+        // 2) 액세스 토큰으로 카카오 사용자 정보 조회
+        KakaoUserResponse user = fetchKakaoUser(token.getAccessToken());
+
+        // =====테스트용 코드 예시=====
+        // KakaoUserResponse user = new KakaoUserResponse();
+        // user.id = 123456789L;
+        // user.properties = Map.of("nickname", "테스트유저");
+        // user.kakaoAccount = new KakaoUserResponse.KakaoAccount();
+        // user.kakaoAccount.email = "test@example.com";
+
+        String providerUserId = String.valueOf(user.getId());
+        String displayName = user.getNickname();
+        String email = user.getEmail(); // 카카오 동의항목에 따라 null 가능
+
+        // 3) 우리 서비스의 AuthIdentity로 매핑/조회
+        Optional<AuthIdentity> existing = authIdentityRepository
+                .findByProviderAndProviderUserId(SocialLogin.KAKAO, providerUserId);
+
+        ChildUser child;
+        boolean needAdditionalInfo = false;
+
+        if (existing.isPresent()) {
+            // 3-1) 기존 유저 로그인
+            child = existing.get().getChildUser();
+
+            // 필요한 추가 정보가 비어있으면 추가 입력 유도
+            if (isBlank(child.getName()) || isBlank(child.getUserId())) {
+                needAdditionalInfo = true;
+            }
+
+            // 마지막 로그인 시각 등 갱신이 필요하면 여기서 처리 (예: existing.get().setLastLoginAt(...))
+        } else {
+            // 3-2) 신규 가입 → ChildUser + AuthIdentity 생성
+            child = new ChildUser();
+            child.setName(displayName);
+            child.setUserId(email); // 우리 서비스에선 userId를 email로 사용 (null일 수 있음)
+            child = childUserRepository.save(child);
+
+            AuthIdentity identity = new AuthIdentity();
+            identity.setProvider(SocialLogin.KAKAO);
+            identity.setProviderUserId(providerUserId);
+            identity.setProviderEmail(email);
+            identity.setDisplayName(displayName);
+            identity.setChildUser(child);
+
+            // TODO: accessTokenEnc/refreshTokenEnc 을 암호화하여 저장하려면 Encryption 적용
+            authIdentityRepository.save(identity);
+
+            needAdditionalInfo = true; // 첫 가입자는 추가정보 입력 페이지로 유도
+        }
+
+        // 4) 우리 서비스 JWT 발급
+        String accessToken = jwtTokenProvider.createAccessToken(child);
+
+        // 5) (임시) refreshToken 발급: 현재는 저장소에 보관하지 않고 임의 생성
+        //    실제 운영에서는 DB/Redis에 저장 + /api/auth/refresh 로 재발급 흐름 구성 필요
+        String refreshToken = UUID.randomUUID().toString();
+
+        long expiresInSec = Math.max(1, jwtExpirationMs / 1000); // 밀리초 → 초
+
+        // 6) 프론트에 내려줄 사용자 요약 정보
+        MemberDto memberDto = new MemberDto(
+                child.getId(),
+                child.getUserId(),     // email(UserId)
+                child.getName(),
+                UserType.CHILD,
+                needAdditionalInfo
+        );
+
+        return new TokenDto(accessToken, refreshToken, expiresInSec, memberDto);
+    }
+
+    /**
+     * 1) 카카오 토큰 교환
+     */
+    private KakaoTokenResponse exchangeKakaoToken(String code, String redirectUri) {
+        RestTemplate rt = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "authorization_code");
+        form.add("client_id", kakaoClientId);
+        form.add("redirect_uri", redirectUri);
+        form.add("code", code);
+        if (!isBlank(kakaoClientSecret)) {
+            form.add("client_secret", kakaoClientSecret);
+        }
+
+        HttpEntity<MultiValueMap<String, String>> req = new HttpEntity<>(form, headers);
+
+        try {
+            ResponseEntity<KakaoTokenResponse> resp = rt.postForEntity(
+                    "https://kauth.kakao.com/oauth/token",
+                    req,
+                    KakaoTokenResponse.class
+            );
+            KakaoTokenResponse body = resp.getBody();
+            if (body == null || isBlank(body.getAccessToken())) {
+                throw new IllegalStateException("카카오 토큰 응답이 비어있습니다.");
+            }
+            return body;
+        } catch (RestClientResponseException e) {
+            // 카카오가 반환한 에러 바디/코드 로깅
+            throw new IllegalStateException("카카오 토큰 교환 실패: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    /**
+     * 2) 카카오 사용자 정보 조회
+     */
+    private KakaoUserResponse fetchKakaoUser(String accessToken) {
+        RestTemplate rt = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<Void> req = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<KakaoUserResponse> resp = rt.exchange(
+                    "https://kapi.kakao.com/v2/user/me",
+                    HttpMethod.GET,
+                    req,
+                    KakaoUserResponse.class
+            );
+            KakaoUserResponse body = resp.getBody();
+            if (body == null || body.getId() == null) {
+                throw new IllegalStateException("카카오 사용자 정보 응답이 비어있습니다.");
+            }
+            return body;
+        } catch (RestClientResponseException e) {
+            throw new IllegalStateException("카카오 사용자 정보 조회 실패: " + e.getStatusCode() + " " + e.getResponseBodyAsString(), e);
+        }
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    
+     // Kakao API 응답 DTO들
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class KakaoTokenResponse {
+        @JsonProperty("access_token")
+        private String accessToken;
+        @JsonProperty("refresh_token")
+        private String refreshToken;
+        @JsonProperty("expires_in")
+        private Long expiresIn;
+
+        public String getAccessToken() { return accessToken; }
+        public String getRefreshToken() { return refreshToken; }
+        public Long getExpiresIn() { return expiresIn; }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class KakaoUserResponse {
+        private Long id;
+        private Map<String, Object> properties;
+
+        @JsonProperty("kakao_account")
+        private KakaoAccount kakaoAccount;
+
+        public Long getId() { return id; }
+
+        public String getNickname() {
+            if (properties != null && properties.get("nickname") instanceof String s) {
+                return s;
+            }
+            return null;
+        }
+
+        public String getEmail() {
+            return kakaoAccount != null ? kakaoAccount.email : null;
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        private static class KakaoAccount {
+            public String email;
+        }
+    }
+}
