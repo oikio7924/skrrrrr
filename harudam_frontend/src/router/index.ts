@@ -9,6 +9,7 @@ import DiaryDetail from '@/views/DiaryDetail.vue'
 import MainP from '@/views/MainP.vue'
 import Footer from '@/views/Footer.vue'
 
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -53,6 +54,12 @@ const router = createRouter({
       path : '/Singupdetail_parent',
       name : 'Singupdetail_parent',
       component : () => import('@/views/Signupdetail_Parent.vue')
+    },
+
+    {
+      path : '/main_parent',
+      name : 'main_parent',
+      component : () => import('@/views/Main_Parent.vue')
     },
 
 
