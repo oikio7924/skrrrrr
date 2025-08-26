@@ -1,0 +1,5 @@
+package com.skrrrrr.harudam.verification;
+
+public interface AlimtalkSender {
+	void sendverificationCode(String phone, String code, int ttlseconds);
+}

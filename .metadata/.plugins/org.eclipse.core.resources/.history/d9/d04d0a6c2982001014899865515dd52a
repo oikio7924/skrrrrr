@@ -1,0 +1,11 @@
+package com.skrrrrr.harudam.auth.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+public class TokenDto {
+	private String accessToken;
+}
