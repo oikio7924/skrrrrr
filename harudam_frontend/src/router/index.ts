@@ -76,8 +76,8 @@ const router = createRouter({
     },
     { path: '/day/:date', name: 'dayPage', component: DiaryDetail, props: true },
     {
-      path : '/main',
-      name : 'main',
+      path : '/mainP',
+      name : 'mainP',
       component : MainP
     }
   ],

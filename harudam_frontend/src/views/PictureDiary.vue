@@ -24,24 +24,33 @@
         </div>
 
         <section class="center" v-if="selectedKey">
-            <div class="imgWrap" @click="openModal(selectedKey)">
-                <img v-if="meta?.imageUrl" :src="meta.imageUrl" alt="" />
-                <div v-else class="imgPlaceholder">그림</div>
+            <div v-if="meta?.imageUrl">
+                <div class="imgWrap" @click="openModal(selectedKey)">
+                    <img :src="meta.imageUrl" alt="" />
+                </div>
+                <button class="titleBox" @click="openModal(selectedKey)">
+                    {{ meta.title }}
+                </button>
             </div>
-
-            <button class="titleBox" @click="openModal(selectedKey)">
-                {{ meta?.title ?? '제목 없음' }}
-            </button>
+            <div v-else class="no-diary-container">
+                <img :src="dayOfWeekDrawImage" alt="그림일기 채우기" class="no-diary-image" />
+                <p class="no-diary-text">
+                    <strong class="no-diary-em">그림일기</strong>를 채워주세요
+                </p>
+                <button class="no-diary-btn" @click="startChat(selectedKey)">시작하기</button>
+            </div>
         </section>
 
-        <router-link class="homeBtn" to="/main">처음화면 보기</router-link>
+        <router-link class="homeBtn" to="/mainP">처음화면 보기</router-link>
 
         <router-view v-slot="{ Component, route }">
-            <transition name="fade">
-                <div v-if="route.meta.modal" class="modal" @click.self="closeModal">
-                    <component :is="Component" class="card" @close="closeModal" />
-                </div>
-            </transition>
+            <Teleport to="body">
+                <transition name="fade">
+                    <div v-if="route.meta.modal" class="modal-overlay" @click.self="closeModal">
+                        <component :is="Component" class="modal-card" @close="closeModal" />
+                    </div>
+                </transition>
+            </Teleport>
         </router-view>
     </div>
 </template>
@@ -72,10 +81,18 @@ const headerMonth = computed(() => new Date(weekDates.value[0].key).getMonth() +
 function moveWeek(n: number) {
     const s = new Date(startOfWeek.value); s.setDate(s.getDate() + 7 * n)
     startOfWeek.value = s
-    selectedKey.value = weekDates.value[0].key // 주 이동 시 첫날 선택
+    selectedKey.value = weekDates.value[0].key
 }
 function select(key: string) { selectedKey.value = key }
-function openModal(key: string) { router.push({ name: 'dayModal', params: { date: key } }) }
+
+function openModal(key: string) {
+    router.push({ name: 'dayModal', params: { date: key } })
+}
+
+function startChat(key: string) {
+    router.push({ name: 'ChatBot', params: { date: key } });
+}
+
 function closeModal() { router.push({ name: 'calendar' }) }
 
 // --- assets/diary 에서 JSON/이미지 읽기 ---
@@ -89,20 +106,26 @@ function getMeta(key: string) {
     return { title: json?.title, desc: json?.desc, imageUrl: imageUrl as string | undefined }
 }
 const meta = computed(() => selectedKey.value ? getMeta(selectedKey.value) : null)
+
+const dayOfWeekDrawImage = computed(() => {
+    if (!selectedKey.value) return '';
+    const date = new Date(selectedKey.value);
+    const dayOfWeek = date.getDay();
+    return `/src/assets/diary/draw${dayOfWeek + 1}.jpg`;
+});
 </script>
 
 <style scoped>
 html {
-    /* 뷰포트 너비에 따라 기본 폰트 크기 조절 */
     font-size: calc(10px + 0.5vw);
 }
 
 .page {
-    width: 100vw;
+    width: 100%;
     max-width: 520px;
     margin: 0 auto;
     padding: 1rem;
-    box-sizing: border-box; /* 패딩이 전체 너비에 포함되도록 */
+    box-sizing: border-box;
 }
 
 .top {
@@ -125,8 +148,8 @@ html {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.6rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.1rem;
 }
 
 .head {
@@ -135,16 +158,26 @@ html {
     font-weight: 600;
 }
 
+.head>div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.4rem;
+}
+
 .days {
     margin-top: 0.4rem;
 }
 
 .day {
-    padding: 1.4rem 0;
+    padding: 0.5rem 0;
     border-radius: 0.8rem;
     background: #f2f2f2;
-    font-size: 1.8rem;
-    aspect-ratio: 1; /* 가로세로 비율 1:1 유지 */
+    font-size: 1.6rem;
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .selected {
@@ -160,8 +193,61 @@ html {
     color: #2563eb;
 }
 
+.no-diary-container {
+    margin-top: 2rem;
+    padding: 3rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: #f0f0f5;
+    border-radius: 1rem;
+    text-align: center;
+    gap: 1.2rem;
+}
+
+.no-diary-image {
+    max-width: 280px;
+    width: 80%;
+    height: auto;
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.no-diary-text {
+    font-size: 1.8rem;
+    color: #555;
+    font-weight: 600;
+    margin: 0;
+    cursor: pointer;
+}
+
+.no-diary-em {
+    font-weight: 900;
+    color: #6e4e99;
+}
+
+.no-diary-btn {
+    width: 80%;
+    padding: 1.2rem;
+    border: 1px solid #fff;
+    border-radius: 9999px;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    background:  #9ec7ff ;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out;
+}
+
+.no-diary-btn:active {
+    transform: scale(0.95);
+}
+
 .center {
-    margin-top: 1rem;
+    margin-top: 2rem;
     padding: 1rem;
     background: #e5e7eb;
     border-radius: 1rem;
@@ -186,7 +272,7 @@ html {
 .imgPlaceholder {
     width: 100%;
     height: auto;
-    aspect-ratio: 16/9; /* 이미지 플레이스홀더 비율 유지 */
+    aspect-ratio: 4/5;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -207,29 +293,31 @@ html {
 
 .homeBtn {
     display: block;
-    margin-top: 1rem;
+    margin-top: 2rem;
     text-align: center;
     padding: 1.2rem;
-    background: #ddd;
-    border-radius: 1rem;
+    border-radius: 9999px;
     text-decoration: none;
-    color: #000;
     font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    background: #c7a4ff 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.modal {
+.modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, .45);
     display: flex;
-    justify-content: center;
     align-items: center;
-    z-index: 50;
+    justify-content: center;
+    background: rgba(0, 0, 0, .45);
+    z-index: 10000;
 }
 
-.card {
+.modal-card {
     width: min(520px, 92vw);
-    max-height: 90vh;
+    max-height: 90svh;
     overflow: auto;
     background: #fff;
     border-radius: 1.2rem;
