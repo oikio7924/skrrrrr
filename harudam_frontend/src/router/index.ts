@@ -43,6 +43,11 @@ const router = createRouter({
       component: () => Signup,
     },
     {
+      path: '/CalendarChild',
+      name: 'CalendarChild',
+      component: () => import('@/views/Calendar_Child.vue'),
+    },
+    {
       path: '/start',
       name: 'Start',
       component: () => Start,
@@ -73,6 +78,7 @@ const router = createRouter({
       name: 'ChatBot',
       component: () => ChatBot,
     },
+
     {
       path: '/diary_p',
       name: 'diary_p',
