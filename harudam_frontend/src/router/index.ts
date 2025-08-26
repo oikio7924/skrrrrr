@@ -6,7 +6,10 @@ import ParentLogin from '@/views/ParentLogin.vue' // 부모용
 import ChatBot from '@/views/ChatBot.vue'
 import PictureDiary from '@/views/PictureDiary.vue'
 import DiaryDetail from '@/views/DiaryDetail.vue'
-import Footer from '@/views/Footer.vue'
+import Main_Child from '@/views/Main_Child.vue'
+import FooterNav from '@/components/FooterNav.vue'
+import Calendar_Child from '@/views/Calendar_Child.vue'
+import ProfileDiary from '@/views/ProfileDiary.vue'
 
 
 const router = createRouter({
@@ -82,7 +85,28 @@ const router = createRouter({
     {
       path: '/footer',
       name: 'footer',
-      component: Footer,
+      component: FooterNav,
+    },
+
+    {
+      path: '/main_child',
+      name: 'main_child',
+      component: Main_Child,
+      meta: { showFooter: true }
+    },
+
+    {
+      path: '/calendar_child',
+      name: 'calendar_child',
+      component: Calendar_Child,
+      meta: { showFooter: true }
+    },
+
+    {
+      path: '/profile_diary',
+      name: 'profile_diary',
+      component: ProfileDiary,
+      meta: { showFooter: true }
     },
   ],
 
