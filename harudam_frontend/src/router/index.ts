@@ -1,12 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-// HomeView import를 삭제했습니다.
 import Signup from '@/views/Signup.vue'
-import Login from '@/views/Login.vue' //자녀용
+import ChildLogin from '@/views/Login.vue' //자녀용
 import ParentLogin from '@/views/ParentLogin.vue' // 부모용
 import ChatBot from '@/views/ChatBot.vue'
 import PictureDiary from '@/views/PictureDiary.vue'
 import DiaryDetail from '@/views/DiaryDetail.vue'
 import Footer from '@/views/Footer.vue'
+import Onboarding from '@/views/Onboarding.vue'
+import Start from '@/views/Start.vue'
+import Signupdetail_Child from '@/views/Signupdetail_Child.vue'
+import Signupdetail_Parent from '@/views/Signupdetail_Parent.vue'
+// import Main_Parent from '@/views/Main_Parent.vue'
 
 
 const router = createRouter({
@@ -17,42 +21,41 @@ const router = createRouter({
       redirect: { name: 'Onboarding' }
     },
     {
+      path: '/onboarding',
+      name: 'Onboarding',
+      component: () => Onboarding,
+    },
+    {
       path: '/login',
       name: 'login',
-      component: Login,
+      component: () => ChildLogin,
     },
     {
       path: '/signup',
       name: 'signup',
-      component: Signup,
-    },
-    // '/about' 경로와 주석 처리된 '/login' 경로는 완전히 삭제했습니다.
-    {
-      path: '/onboarding',
-      name: 'Onboarding',
-      component: () => import('@/views/Onboarding.vue'),
+      component: () => Signup,
     },
     {
       path: '/start',
       name: 'Start',
-      component: () => import('@/views/Start.vue'),
+      component: () => Start,
     },
     {
       path: '/parent-login',
       name: 'parentlogin',
-      component: ParentLogin,
+      component: () => ParentLogin,
     },
 
     {
-      path : '/Singupdetail_child',
-      name : 'Singupdetail_child',
-      component : () => import('@/views/Signupdetail_Child.vue')
+      path : '/Signupdetail_child',
+      name : 'Signupdetail_child',
+      component : () => Signupdetail_Child
     },
 
     {
-      path : '/Singupdetail_parent',
-      name : 'Singupdetail_parent',
-      component : () => import('@/views/Signupdetail_Parent.vue')
+      path : '/Signupdetail_parent',
+      name : 'Signupdetail_parent',
+      component : () => Signupdetail_Parent
     },
 
     { path: '/mainparent', name: 'MainParent', component: () => import('@/views/Main_Parent.vue')},
@@ -61,7 +64,7 @@ const router = createRouter({
     {
       path: '/chat',
       name: 'ChatBot',
-      component: ChatBot
+      component: () => ChatBot,
     },
     {
       path: '/diary_p',
@@ -71,7 +74,7 @@ const router = createRouter({
         {
           path: 'day/:date',
           name: 'dayModal',
-          component: DiaryDetail,
+          component: () => DiaryDetail,
           props: true,
           meta: { modal: true }   // ← 모달 표시 플래그
         }
@@ -82,7 +85,7 @@ const router = createRouter({
     {
       path: '/footer',
       name: 'footer',
-      component: Footer,
+      component: () => Footer,
     },
     { path :'/schedule_p',
       name : 'schedule_p',
@@ -97,11 +100,11 @@ const router = createRouter({
   ],
 
 
- 
-    
 
 
-  scrollBehavior() { return { top: 0 } }  
+
+
+  scrollBehavior() { return { top: 0 } }
 
 })
 

@@ -10,18 +10,18 @@ const apiClient = axios.create({
     },
 });
 
-// 모든 API 요청을 보내기 전에 이 코드가 먼저 실행된다.
+// 요청 인터셉터
 apiClient.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error: any) => {
-        return Promise.reject(error);
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem("access_token"); // 토큰 키 확인!
+    if (token) {
+      // ✅ 개별 속성으로 추가해야 함
+      config.headers = config.headers || {};
+      config.headers["Authorization"] = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 export default apiClient;
