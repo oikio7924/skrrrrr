@@ -10,9 +10,13 @@
     "src/**/__tests__/*"
   ],
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_lsmodules/.tmp/tsconfig.app.tsbuildinfo",
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["vite/client"]
+  },
+  "vueCompilerOptions": {
+    "globalTypesPath": "./src/env.d.ts"
   }
 }

@@ -16,9 +16,9 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@vladmandic/face-api": "^1.7.15",
     "axios": "^1.11.0",
     "firebase": "^12.1.0",
+    "@vladmandic/face-api": "^1.7.8",
     "pinia": "^3.0.3",
     "pixi.js": "^7.4.3",
     "vue": "^3.5.18",
@@ -26,20 +26,25 @@
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
-    "@types/axios": "^0.9.36",
     "@types/node": "^22.16.5",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^9.31.0",
-    "eslint-plugin-vue": "~10.3.0",
+    "eslint-plugin-vue": "10.3.0",
     "jiti": "^2.4.2",
     "npm-run-all2": "^8.0.4",
     "prettier": "3.6.2",
-    "typescript": "~5.6.3",
+    "typescript": "5.6.3",
     "vite": "^7.0.6",
     "vite-plugin-vue-devtools": "^8.0.0",
     "vue-tsc": "^3.0.4"
+  },
+  "overrides": {
+    "node-fetch": "2.6.7",
+    "@tensorflow/tfjs-core": { "node-fetch": "2.6.7" },
+    "tfjs-image-recognition-base": { "node-fetch": "2.6.7" },
+    "face-api.js": { "node-fetch": "2.6.7" }
   }
 }

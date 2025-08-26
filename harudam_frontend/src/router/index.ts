@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 // HomeView import를 삭제했습니다.
-import SignupView from '@/views/SignupView.vue'
-import LoginView from '@/views/LoginView.vue' //자녀용
+import Signup from '@/views/Signup.vue'
+import Login from '@/views/Login.vue' //자녀용
 import ParentLogin from '@/views/ParentLogin.vue' // 부모용
 import ChatBot from '@/views/ChatBot.vue'
 import PictureDiary from '@/views/PictureDiary.vue'
 import DiaryDetail from '@/views/DiaryDetail.vue'
 import MainP from '@/views/MainP.vue'
+import Footer from '@/views/Footer.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,12 +19,12 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginView,
+      component: Login,
     },
     {
       path: '/signup',
       name: 'signup',
-      component: SignupView,
+      component: Signup,
     },
     // '/about' 경로와 주석 처리된 '/login' 경로는 완전히 삭제했습니다.
     {
@@ -33,8 +34,8 @@ const router = createRouter({
     },
     {
       path: '/start',
-      name: 'StartView',
-      component: () => import('@/views/StartView.vue'),
+      name: 'Start',
+      component: () => import('@/views/Start.vue'),
     },
     {
       path: '/parent-login',
@@ -45,13 +46,13 @@ const router = createRouter({
     {
       path : '/Singupdetail_child',
       name : 'Singupdetail_child',
-      component : () => import('@/views/SignupdetailView_Child.vue')
+      component : () => import('@/views/Signupdetail_Child.vue')
     },
 
     {
       path : '/Singupdetail_parent',
       name : 'Singupdetail_parent',
-      component : () => import('@/views/SignupdetailView_Parent.vue')
+      component : () => import('@/views/Signupdetail_Parent.vue')
     },
 
 
@@ -76,14 +77,20 @@ const router = createRouter({
     },
     { path: '/day/:date', name: 'dayPage', component: DiaryDetail, props: true },
     {
-      path : '/mainP',
-      name : 'mainP',
+      path : '/main',
+      name : 'main',
       component : MainP
-    }
+    },
+
+    {
+      path: '/footer',
+      name: 'footer',
+      component: Footer,
+    },
   ],
 
 
-  scrollBehavior() { return { top: 0 } }  
+  scrollBehavior() { return { top: 0 } }
 
 })
 
