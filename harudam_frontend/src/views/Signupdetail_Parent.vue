@@ -360,7 +360,7 @@ async function onSubmit() {
     // TODO: 실제 회원가입 API 호출
     await new Promise<void>(r => setTimeout(r, 600))
     alert('회원가입이 완료되었습니다.')
-    router.push({ name: 'Home' })
+    router.push({ name: 'Main' })
   } catch (e) {
     console.error(e)
     alert('회원가입 중 오류가 발생했습니다.')
