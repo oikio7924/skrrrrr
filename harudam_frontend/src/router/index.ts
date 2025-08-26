@@ -33,6 +33,11 @@ const router = createRouter({
       component: () => import('@/views/Onboarding.vue'),
     },
     {
+      path: '/CalendarChild',
+      name: 'CalendarChild',
+      component: () => import('@/views/Calendar_Child.vue'),
+    },
+    {
       path: '/start',
       name: 'Start',
       component: () => import('@/views/Start.vue'),
@@ -63,6 +68,7 @@ const router = createRouter({
       name: 'ChatBot',
       component: ChatBot
     },
+
     {
       path: '/diary_p',
       name: 'diary_p',

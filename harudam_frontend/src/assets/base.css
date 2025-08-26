@@ -3,7 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 :root {
   --vt-c-white: #ffffff;
   --vt-c-white-soft: #f8f8f8;
