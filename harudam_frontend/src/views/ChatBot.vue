@@ -1,137 +1,204 @@
 <template>
-  <div class="chatbot-container">
-    <div class="child-face-container">
-      <img :src="childFaceImage" alt="자녀 얼굴" class="child-face-img">
+  <div id="chatbot-page" class="page" @keyup.esc="closeChat" tabindex="0">
+    <!-- 중앙에 얼굴 크게 -->
+    <div class="face-area">
+      <img :src="childFaceImage" alt="자녀 얼굴" class="face-img" />
     </div>
 
-    <button
-      :style="{ backgroundColor: chatButtonStyle }"
-      @click="toggleChat"
-      class="chat-button"
-    >
-      {{ chatButtonText }}
-    </button>
+    <!-- 대화 시작/종료 버튼 -->
+    <main class="content">
+      <button
+        class="chat-cta"
+        :class="showChat ? 'end' : 'start'"
+        :aria-pressed="showChat.toString()"
+        :aria-expanded="showChat.toString()"
+        @click="toggleChat"
+      >
+        <span class="label">
+          <span v-if="!showChat">▶️ 대화 시작</span>
+          <span v-else>⏹️ 대화 종료</span>
+        </span>
+      </button>
 
-    <div v-if="showChat" class="chatbot-area">
-      <div class="chat-placeholder">챗봇 기능 구현 자리입니다.</div>
-    </div>
+      <section
+        v-if="showChat"
+        class="chat-panel"
+        aria-label="대화 영역"
+        role="region"
+      >
+        <div class="panel-header">
+          <strong>대화창</strong>
+          <button class="mini-close" @click="closeChat" aria-label="대화 종료">✕</button>
+        </div>
+        <div class="panel-body" role="log" aria-live="polite">
+          <div class="placeholder">챗봇 기능 구현 자리입니다.</div>
+        </div>
+      </section>
+    </main>
 
-    <button @click="goToMain" class="main-page-button">
-      처음 화면 보기
-    </button>
+    <!-- 하단 고정: 처음 화면 보기 -->
+    <footer class="bottombar">
+      <button class="home" @click="goToMain">처음화면 보기</button>
+    </footer>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-// 이미지 경로를 동적으로 가져오는 Vite/Vue3 방식
-const childFaceImage = new URL('@/assets/child/child-face.png', import.meta.url).href;
+// 이미지 경로 (Vite)
+const childFaceImage = new URL('@/assets/child/child-face.png', import.meta.url).href
 
-const router = useRouter();
-const showChat = ref(false);
-const chatButtonText = ref('대화 시작');
-const chatButtonStyle = ref('');
+const router = useRouter()
+const showChat = ref(false)
+const chatButtonText = ref('대화 시작')
 
 const toggleChat = () => {
-  showChat.value = !showChat.value;
+  showChat.value = !showChat.value
+  chatButtonText.value = showChat.value ? '대화 종료' : '대화 시작'
+}
+
+const closeChat = () => {
   if (showChat.value) {
-    chatButtonText.value = '대화 종료';
-    chatButtonStyle.value = 'red';
-  } else {
-    chatButtonText.value = '대화 시작';
-    chatButtonStyle.value = ''; // 기본 스타일로 돌아감
+    showChat.value = false
+    chatButtonText.value = '대화 시작'
   }
-};
+}
 
 const goToMain = () => {
-  // 'Onboarding'은 router/index.ts 파일에 설정된 라우트의 name입니다.
-  router.push({ name: 'Onboarding' }); 
-};
+  router.push({ name: 'MainParent' })
+}
 </script>
 
 <style scoped>
-.chatbot-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 5rem; /* 전체 여백을 rem으로 조정 */
-  font-family: sans-serif;
-  color: #333;
+:root {
+  --bg-color: #f6f7fb;
+  --danger: #ef4444;
+  --success: #22c55e;
+  --text-light: #fff;
+  --text-dark: #1f2937;
+  --border: #e5e7eb;
+  --shadow-md: 0 6px 18px rgba(0,0,0,.08);
+  --radius-xl: 22px;
 }
 
-.child-face-container {
-  width: 70vw; /* 화면 너비의 70% */
-  height: 70vw; /* 너비와 동일하게 설정하여 항상 정원 유지 */
-  max-width: 300px; /* 너무 커지지 않도록 최대값 설정 */
-  max-height: 300px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-bottom: 4rem; /* rem 단위로 조정 */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  background-color: #f0f0f0;
+.page {
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  background: var(--bg-color);
 }
 
-.child-face-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.chat-button {
-  padding: 1.5rem 3rem; /* rem 단위로 조정 */
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 2rem; /* rem 단위로 조정 */
-  font-weight: bold;
-  color: white;
-  background-color: #42b983; /* Vue 초록색 */
-  transition: background-color 0.3s ease;
-  margin-bottom: 2rem;
-}
-
-.chat-button:hover {
-  filter: brightness(1.1);
-}
-
-.chatbot-area {
-  width: 90%; /* 화면 너비의 90%를 사용 */
-  max-width: 600px; /* 너무 커지지 않도록 최대값 설정 */
-  height: 50vh; /* 화면 높이의 50%를 사용 */
-  max-height: 500px; /* 너무 커지지 않도록 최대값 설정 */
-  border: 2px solid #ddd;
-  border-radius: 15px;
-  margin-top: 2rem;
-  padding: 2rem;
-  overflow-y: auto;
-  background-color: #fff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+/* 얼굴 크게 */
+.face-area {
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 20px;
+}
+.face-img {
+  width: 80vw;
+  height: 80vw;
+  max-width: 360px;
+  max-height: 360px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
 
-.chat-placeholder {
-  font-size: 1.5rem; /* rem 단위로 조정 */
-  color: #999;
-  text-align: center;
+/* 버튼 */
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
 }
-
-.main-page-button {
-  margin-top: 3rem;
-  padding: 1.5rem 4rem;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background-color: #f7f7f7;
-  cursor: pointer;
-  font-size: 1.5rem;
+.chat-cta {
+  width: 100%;
+  max-width: 620px;
+  min-height: 64px;
+  appearance: none;
+  border: none;
+  border-radius: 20px;
+  font-size: 20px;
   font-weight: bold;
-  color: #555;
+  color: var(--text-light, #fff);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+}
+.chat-cta.start {
+  background-color: var(--success, #22c55e);
+}
+.chat-cta.end {
+  background-color: var(--danger, #ef4444);
+}
+.chat-cta:hover {
+  filter: brightness(1.1);
 }
 
-.main-page-button:hover {
-  background-color: #e0e0e0;
+/* 챗 패널 */
+.chat-panel {
+  width: 100%;
+  max-width: 620px;
+  height: min(56vh, 520px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  overflow: auto; /* 내부 스크롤만 허용 */
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.panel-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight:700;
+}
+.mini-close {
+  border:none;
+  background:transparent;
+  font-size:18px;
+  cursor:pointer;
+  color: #666;
+}
+.panel-body {
+  padding: 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: #999;
+}
+
+/* 하단바 */
+.bottombar {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding: 14px 16px 18px;
+  box-shadow: 0 -1px 6px rgba(0,0,0,0.08);
+}
+.home {
+  width: 100%;
+  min-height: 64px;
+  border: none;
+  border-radius: 18px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff8a4d, #ff6b2c);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 107, 44, 0.35);
+}
+.home:hover {
+  filter: brightness(1.1);
 }
 </style>
