@@ -86,9 +86,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+// import api from '@/api'
 
 /** ===== 타입 정의 ===== */
-type Provider = "kakao" | "naver" | "google" | "apple";
+type Provider = "kakao" | "naver" | "google";
 type SocialProfile = {
   provider: Provider;
   id: string;
@@ -248,18 +249,26 @@ async function startSocialSignup(provider: Provider) {
     });
 
     // 🔹 JWT 발급 (백엔드 통신)
-    const res = await fetch("/api/auth/kakao", {
+    const res = await fetch("http://localhost:8080/api/auth/social-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: token }),
+      body: JSON.stringify({
+        provider: "KAKAO",   // 반드시 body 안으로
+        code: token,         // 카카오에서 받은 accessToken
+      }),
     });
+
     if (!res.ok) throw new Error(`백엔드 응답 오류: ${res.status}`);
     const data = await res.json();
-    localStorage.setItem("auth_token", data.jwt);
+
+    // localStorage 저장 (2개 인자 필수!)
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("refreshToken", data.refreshToken);
+
 
     // 🔹 상세정보 입력 페이지로 이동 (한 번만!)
     router.push({
-      name: "SignupDetailParent",
+      name: "Signupdetail_child",
       query: {
         id: kakaoUser.id,
         name: kakaoUser.name,

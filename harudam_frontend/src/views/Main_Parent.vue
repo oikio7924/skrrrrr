@@ -41,7 +41,7 @@
 
           <!-- 그림일기 -->
           <RouterLink
-            to="/diary"
+            to="/diary_p"
             aria-label="그림일기로 이동"
             class="w-full h-20 sm:h-24 md:h-28 rounded-3xl bg-pink-300 text-white ring-1 ring-black/10
                    focus:outline-none focus:ring-4 focus:ring-pink-200 flex items-center justify-between
@@ -60,7 +60,7 @@
 
           <!-- 일정보기 -->
           <RouterLink
-            to="/calendar"
+            to="/schedule_p"
             aria-label="일정보기로 이동"
             class="w-full h-20 sm:h-24 md:h-28 rounded-3xl bg-amber-400 text-white ring-1 ring-black/10
                    focus:outline-none focus:ring-4 focus:ring-amber-300 flex items-center justify-between

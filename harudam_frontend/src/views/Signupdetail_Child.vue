@@ -432,7 +432,7 @@ function submit() {
   const payload = { ...form, agreements: { ...agreements } }
   console.log('submit payload', payload)
   alert(' 부모정보 입력 화면으로 이동합니다.')
-  router.push({ name: 'Singupdetail_parent' })
+  router.push({ name: 'Signupdetail_parent' })
 }
 
 function removePhoto() {
