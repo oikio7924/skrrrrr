@@ -1,5 +1,6 @@
 @import './base.css';
 
+/* 앱 공통 래퍼 */
 #app {
   max-width: 1280px;
   margin: 0 auto;
@@ -7,6 +8,7 @@
   font-weight: normal;
 }
 
+/* 링크 스타일 */
 a,
 .green {
   text-decoration: none;
@@ -21,15 +23,10 @@ a,
   }
 }
 
+/* 🚫 body 레이아웃 제거: 페이지 밀림 방지 */
+/* 1024px 이상일 때, app만 패딩 조정 */
 @media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
   #app {
-    /* display: grid;
-    grid-template-columns: 1fr 1fr; */
     padding: 0 2rem;
   }
 }

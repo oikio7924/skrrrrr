@@ -1,23 +1,44 @@
-import { globalIgnores } from 'eslint/config'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
-import pluginVue from 'eslint-plugin-vue'
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import pluginVue from "eslint-plugin-vue"
+import tseslint from "typescript-eslint"
+import skipFormatting from "@vue/eslint-config-prettier/skip-formatting"
 
-// To allow more languages other than `ts` in `.vue` files, uncomment the following lines:
-// import { configureVueProject } from '@vue/eslint-config-typescript'
-// configureVueProject({ scriptLangs: ['ts', 'tsx'] })
-// More info at https://github.com/vuejs/eslint-config-typescript/#advanced-setup
-
-export default defineConfigWithVueTs(
+export default [
+  // TS 파일 (타입 검사 포함)
   {
-    name: 'app/files-to-lint',
-    files: ['**/*.{ts,mts,tsx,vue}'],
+    files: ["**/*.{ts,mts,tsx}"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: "./tsconfig.app.json",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+    },
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  // Vue 파일 (문법 검사만)
+  {
+    files: ["**/*.vue"],
+    languageOptions: {
+      parser: require("vue-eslint-parser"),
+      parserOptions: {
+        parser: "@typescript-eslint/parser",
+        extraFileExtensions: [".vue"],
+        project: null, // vue 파일은 타입 검사 제외
+      },
+    },
+    plugins: {
+      vue: pluginVue,
+    },
+  },
 
-  pluginVue.configs['flat/essential'],
-  vueTsConfigs.recommended,
+  // Vue 권장 규칙
+  ...pluginVue.configs["flat/recommended"],
+
+  // TS 권장 규칙
+  ...tseslint.configs.recommended,
+
+  // prettier 충돌 방지
   skipFormatting,
-
-)
+]

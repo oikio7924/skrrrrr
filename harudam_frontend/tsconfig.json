@@ -6,5 +6,6 @@
   ],
   "vueCompilerOptions": {
     "globalTypesPath": "./src/env.d.ts"
-  }
+  },
+  "exclude": ["eslint.config.ts"]  // ✅ 추가
 }
