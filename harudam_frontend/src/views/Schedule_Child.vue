@@ -7,10 +7,8 @@
         </svg>
       </button>
 
-      <h1 class="text-xl font-bold flex-1 text-center">일정 관리</h1> <button
-        class="add-button"
-        @click="openEventModal"
-      >
+      <h1 class="text-xl font-bold flex-1 text-center">일정 관리</h1>
+      <button class="add-button" @click="openEventModal">
         일정 추가
       </button>
     </header>
@@ -34,11 +32,18 @@
                 <span class="event-title">{{ event.title }}</span>
                 <p v-if="event.note" class="event-note">{{ event.note }}</p>
               </div>
-              <button class="edit-btn" @click="editEvent(event)">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293a1 1 0 01-.39.24l-3 1a1 1 0 01-1.253-1.253l1-3a1 1 0 01.24-.39l7.293-7.293zM15 6L13.5 4.5l-6.5 6.5L6 11.5l1.5 1.5 6.5-6.5z" />
-                </svg>
-              </button>
+              <div class="flex gap-2">
+                <button class="edit-btn" @click="editEvent(event)">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293a1 1 0 01-.39.24l-3 1a1 1 0 01-1.253-1.253l1-3a1 1 0 01.24-.39l7.293-7.293zM15 6L13.5 4.5l-6.5 6.5L6 11.5l1.5 1.5 6.5-6.5z" />
+                  </svg>
+                </button>
+                <button class="delete-btn" @click="openDeleteConfirm(event.id)">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </li>
           </ul>
         </div>
@@ -51,12 +56,23 @@
       @close="closeEventModal"
       @save="saveEvent"
     />
+
+    <div v-if="showDeleteConfirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
+        <h3 class="text-xl font-bold mb-4">일정 삭제</h3>
+        <p class="mb-6 text-gray-700">정말로 이 일정을 삭제하시겠습니까?</p>
+        <div class="flex justify-center gap-4">
+          <button @click="confirmDelete" class="delete-confirm-btn">삭제</button>
+          <button @click="showDeleteConfirmModal = false" class="cancel-confirm-btn">취소</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router'; // useRouter 임포트
+import { useRouter } from 'vue-router';
 import EventModal from '@/components/EventModal.vue';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -73,11 +89,15 @@ type EventsByDate = {
   events: EventItem[];
 };
 
-const router = useRouter(); // useRouter 인스턴스 생성
+const router = useRouter();
 const showModal = ref(false);
 const loading = ref(true);
 const eventsByDate = ref<EventsByDate[]>([]);
 const currentEvent = ref<Partial<EventItem>>({});
+
+// ✅ 삭제 확인 모달 관련 상태
+const showDeleteConfirmModal = ref(false);
+const eventToDeleteId = ref<string | null>(null);
 
 const LS_KEY = 'harudam.events.local.v1';
 
@@ -94,13 +114,11 @@ const saveEvent = (formData: Omit<EventItem, 'id'>) => {
   let storedEvents: EventItem[] = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
   
   if (currentEvent.value.id) {
-    // 수정
     const index = storedEvents.findIndex(e => e.id === currentEvent.value.id);
     if (index !== -1) {
       storedEvents[index] = { ...storedEvents[index], ...formData };
     }
   } else {
-    // 등록
     const newEvent: EventItem = {
       id: uuidv4(),
       ...formData
@@ -108,7 +126,6 @@ const saveEvent = (formData: Omit<EventItem, 'id'>) => {
     storedEvents.push(newEvent);
   }
 
-  // 시간순 및 날짜순 정렬
   storedEvents.sort((a, b) => {
     const dateA = a.date.replace(/-/g, '');
     const dateB = b.date.replace(/-/g, '');
@@ -125,6 +142,24 @@ const saveEvent = (formData: Omit<EventItem, 'id'>) => {
 const editEvent = (event: EventItem) => {
   currentEvent.value = { ...event };
   showModal.value = true;
+};
+
+// ✅ 삭제 확인 모달 열기
+const openDeleteConfirm = (eventId: string) => {
+  eventToDeleteId.value = eventId;
+  showDeleteConfirmModal.value = true;
+};
+
+// ✅ 실제 삭제 로직
+const confirmDelete = () => {
+  if (eventToDeleteId.value) {
+    let storedEvents: EventItem[] = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    const filteredEvents = storedEvents.filter(event => event.id !== eventToDeleteId.value);
+    localStorage.setItem(LS_KEY, JSON.stringify(filteredEvents));
+    loadEvents();
+    showDeleteConfirmModal.value = false;
+    eventToDeleteId.value = null; // 초기화
+  }
 };
 
 const loadEvents = () => {
@@ -154,9 +189,8 @@ const formatDate = (dateString: string) => {
   return `${month}월 ${day}일 (${dayOfWeek})`;
 };
 
-// ✅ 뒤로 가기 기능 추가
 const goBack = () => {
-  router.back(); // 이전 페이지로 이동
+  router.back();
 };
 
 onMounted(() => {
@@ -190,24 +224,23 @@ onMounted(() => {
   position: relative;
 }
 
-/* ✅ 뒤로 가기 버튼 스타일 */
 .back-button {
   background: none;
   border: none;
-  color: #374151; /* 어두운 회색 */
+  color: #374151;
   padding: 8px;
   border-radius: 50%;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  display: flex; /* SVG 중앙 정렬 */
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px; /* 터치 영역 확보 */
-  height: 40px; /* 터치 영역 확보 */
+  width: 40px;
+  height: 40px;
 }
 
 .back-button:hover {
-  background-color: rgba(0, 0, 0, 0.05); /* 호버 시 살짝 배경색 */
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .add-button {
@@ -283,15 +316,54 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-.edit-btn {
-  background: #f5f3ff;
-  color: #8b5cf6;
+.edit-btn, .delete-btn {
+  background: var(--lav-50);
+  color: var(--lav-500);
   border-radius: 9999px;
   padding: 8px;
   transition: background 0.2s ease;
 }
 
-.edit-btn:hover {
-  background: #ede9fe;
+.edit-btn:hover, .delete-btn:hover {
+  background: var(--lav-100);
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.delete-btn:hover {
+  background: #fecaca;
+}
+
+/* ✅ 삭제 확인 모달 스타일 */
+.delete-confirm-btn {
+  background-color: #ef4444; /* 빨간색 */
+  color: #fff;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.delete-confirm-btn:hover {
+  background-color: #dc2626;
+}
+.delete-confirm-btn:active {
+  transform: scale(0.98);
+}
+
+.cancel-confirm-btn {
+  background-color: #e5e7eb; /* 회색 */
+  color: #4b5563;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.cancel-confirm-btn:hover {
+  background-color: #d1d5db;
+}
+.cancel-confirm-btn:active {
+  transform: scale(0.98);
 }
 </style>

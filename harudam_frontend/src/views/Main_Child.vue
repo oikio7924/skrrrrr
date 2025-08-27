@@ -1,14 +1,10 @@
 <template>
   <div class="main-child">
-     <!-- ✅ 공통 헤더 추가 -->
     <Header />
-    <!-- 메인 컨텐츠 -->
     <main class="content">
-      <!-- 제목 -->
       <h1 class="title">아버지의 하루</h1>
       <p class="subtitle">어떤 하루를 보내시고 계실까요?</p>
 
-      <!-- 그림일기 카드 -->
       <section class="card" @click="goToDiaryDetail('2023-08-22')">
         <span class="badge">8월 22일 그림일기</span>
         <div class="image-box">Image</div>
@@ -20,7 +16,6 @@
           고기는 못 잡아도 마음만은 풍족한 하루.
         </p>
 
-        <!-- 대표 감정 -->
         <div class="emotion-box">
           <span class="emoji">😊</span>
           <div class="emotion-text">
@@ -30,31 +25,27 @@
         </div>
       </section>
 
-      <!-- 버튼 -->
-      <!-- 버튼 -->
       <section class="button-group">
         <button class="btn" @click="goToCalendar">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14
-               a2 2 0 002-2V7a2 2 0 00-2-2H5
-               a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                a2 2 0 002-2V7a2 2 0 00-2-2H5
+                a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           달력
         </button>
 
         <button class="btn" @click="goToMemoir">
-          <!-- 📖 책 아이콘 -->
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5V6.5A2.5 2.5 0 016.5 4H20v15H6.5
-               A2.5 2.5 0 014 19.5z" />
+                A2.5 2.5 0 014 19.5z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 4v15a2 2 0 01-2 2H6.5
-               a2.5 2.5 0 01-2.5-2.5" />
+                a2.5 2.5 0 01-2.5-2.5" />
           </svg>
           자서전
         </button>
       </section>
 
-      <!-- 일정 -->
       <section class="card schedule-card">
         <div class="schedule-header">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -63,14 +54,23 @@
                      a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <h3 class="card-title">최근 주요 일정</h3>
+
+          <!-- ✅ 오른쪽 끝 일정추가하기 버튼 -->
+          <button class="add-btn" @click="goToDetail(todayStr)">
+            일정추가하기
+          </button>
         </div>
 
         <ul class="schedule-list">
           <li v-if="eventStore.sortedEvents.length === 0" class="schedule-item-empty">
             등록된 일정이 없어요.
           </li>
-          <li v-for="event in eventStore.sortedEvents.slice(-3)" :key="event.id" class="schedule-item"
-            @click="goToDetail(event.date)">
+          <li
+            v-for="event in eventStore.sortedEvents.slice(-3)"
+            :key="event.id"
+            class="schedule-item"
+            @click="goToDetail(event.date)"
+          >
             <span class="date">{{ formatDate(event.date) }}</span>
             <span class="text">{{ event.title }}</span>
           </li>
@@ -78,7 +78,6 @@
       </section>
     </main>
 
-    <!-- ✅ FooterNav -->
     <FooterNav />
   </div>
 </template>
@@ -87,12 +86,12 @@
 import { defineComponent, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import FooterNav from "@/components/FooterNav.vue";
-import Header from "@/components/Header.vue"
-import { useEventStore } from '@/stores/eventStore';
+import Header from "@/components/Header.vue";
+import { useEventStore } from "@/stores/eventStore";
 
 export default defineComponent({
   name: "MainChild",
-  components: { FooterNav,Header },
+  components: { FooterNav, Header },
   setup() {
     const router = useRouter();
     const eventStore = useEventStore();
@@ -103,7 +102,7 @@ export default defineComponent({
 
     // ✅ 일정 상세 페이지 이동
     const goToDetail = (date: string) => {
-      router.push({ name: 'schedule_c', params: { date } });
+      router.push({ name: "schedule_c", params: { date } });
     };
 
     // ✅ 그림일기 상세 페이지 이동
@@ -120,22 +119,39 @@ export default defineComponent({
     const goToMemoir = () => {
       router.push({ name: "memoir" });
     };
+
+    // ✅ YYYY-MM-DD → "M월 D일"
     const formatDate = (dateString: string) => {
-      const [year, month, day] = dateString.split('-').map(Number);
+      const [year, month, day] = dateString.split("-").map(Number);
       return `${month}월 ${day}일`;
     };
 
-    return { goToDetail, goToDiaryDetail, goToCalendar, goToMemoir, eventStore, formatDate};
-  }
+    // ✅ 오늘 날짜(클라이언트 기준) → YYYY-MM-DD
+    const todayStr = (() => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    })();
+
+    return {
+      goToDetail,
+      goToDiaryDetail,
+      goToCalendar,
+      goToMemoir,
+      eventStore,
+      formatDate,
+      todayStr,
+    };
+  },
 });
 </script>
 
-
 <style>
 #app {
-  background: #F8FAFC !important;
+  background: #f8fafc !important;
   min-height: 100%;
-  /* 100vh 대신 100% */
   display: flex;
   justify-content: center;
 }
@@ -147,18 +163,14 @@ export default defineComponent({
 html,
 body {
   height: 100%;
-  /* 전체 높이 */
   overflow-y: auto;
-  /* ✅ 스크롤 활성화 */
-  background: #F8FAFC;
-  /* 전체 배경 */
+  background: #f8fafc;
 }
 
 body {
   margin: 0 !important;
   padding: 0 !important;
-  background: #F8FAFC !important;
-  /* 배경색 유지 */
+  background: #f8fafc !important;
 }
 
 .main-child {
@@ -166,13 +178,12 @@ body {
   flex-direction: column;
   width: 100%;
   max-width: 720px;
-  /* min-height: 100vh; ✅ 삭제 */
 }
 
 #app {
   display: flex;
   justify-content: center;
-  background: #F8FAFC;
+  background: #f8fafc;
   min-height: 100vh;
 }
 
@@ -181,8 +192,8 @@ body {
   width: 100%;
   max-width: 720px;
   padding: 20px;
-  padding-top: 100px;  /* ✅ 헤더 높이 + 여유 간격 */
-  padding-bottom: 100px; /* FooterNav 가리지 않게 */
+  padding-top: 100px;
+  padding-bottom: 100px;
 }
 
 /* 제목 */
@@ -225,7 +236,6 @@ body {
 .image-box {
   margin-top: 10px;
   margin-bottom: 16px;
-  /* ✅ 이미지 아래 간격 추가 */
   height: 220px;
   background: #c4b5fd;
   border-radius: 8px;
@@ -239,9 +249,7 @@ body {
 
 .card-title {
   margin-top: 16px;
-  /* ✅ 제목 위쪽 여백 늘림 */
   margin-bottom: 10px;
-  /* ✅ 제목과 본문 사이 간격 */
   font-weight: bold;
   font-size: 18px;
 }
@@ -251,7 +259,6 @@ body {
   font-size: 15px;
   color: #555;
   line-height: 1.6;
-  /* ✅ 줄 간격을 조금 더 여유있게 */
 }
 
 /* 감정 */
@@ -303,7 +310,6 @@ body {
   align-items: center;
 }
 
-/* ✅ hover 제거 → 눌림만 */
 .btn:hover {
   transform: none;
   border-color: #e5e7eb;
@@ -342,6 +348,33 @@ body {
   color: #1f2937;
 }
 
+/* ✅ 일정추가하기 버튼 (헤더 오른쪽 끝) */
+.add-btn {
+  margin-left: auto;           /* 오른쪽 끝으로 밀기 */
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1;
+  border: 1px solid #d8b4fe;   /* 라일락 보더 */
+  color: #6d28d9;              /* 진보라 텍스트 */
+  background: #ffffff;
+  border-radius: 9999px;
+  cursor: pointer;
+  white-space: nowrap;         /* 한 줄 유지 (넘침 방지) */
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.add-btn:hover {
+  background: #f3e8ff;        /* 연보라 배경 */
+  border-color: #c084fc;
+  color: #5b21b6;
+}
+
+.add-btn:active {
+  transform: scale(0.98);
+  background: #e9d5ff;
+}
+
 /* 일정 리스트 */
 .schedule-list {
   list-style: none;
@@ -360,24 +393,20 @@ body {
 
 .schedule-item:hover {
   background: #f3e8ff;
-  /* 연보라 배경 */
 }
 
 .schedule-item:hover .date,
 .schedule-item:hover .text {
   color: #6d28d9;
-  /* 진보라 글씨 */
 }
 
 .schedule-item:active {
   background: #e9d5ff;
-  /* 클릭 시 더 진한 보라 */
   transform: scale(0.98);
 }
 
 .schedule-item .date {
   font-weight: 500;
-  /* 덜 굵게 */
   margin-right: 10px;
   color: #111;
   min-width: 90px;
@@ -387,5 +416,21 @@ body {
   flex: 1;
   font-size: 14px;
   color: #374151;
+}
+
+.schedule-item-empty {
+  padding: 10px 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.schedule-item-empty:hover {
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.schedule-item-empty:active {
+  transform: scale(0.98);
 }
 </style>
