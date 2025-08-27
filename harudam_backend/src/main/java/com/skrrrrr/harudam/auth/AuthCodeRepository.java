@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 import com.skrrrrr.harudam.common.enums.AuthCodeStatus;
 
 @Repository
-public interface AuthCodeRepository extends JpaRepository<AuthCode, Long>{
-	
-	Optional<AuthCode> findTopByTargetParentPhoneAndStatusOrderByCreatedAtDesc(
-			String targetParentPhone, AuthCodeStatus status
-	);
+public interface AuthCodeRepository extends JpaRepository<AuthCode, Long> {
+    Optional<AuthCode> findTopByTargetParentPhoneAndStatusOrderByCreatedAtDesc(
+            String targetParentPhone,
+            AuthCodeStatus status
+    );
 }

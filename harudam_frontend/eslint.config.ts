@@ -32,6 +32,15 @@ export default [
       vue: pluginVue,
     },
   },
+  {
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.json'],
+      },
+    },
+  },
+
+  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
 
   // Vue 권장 규칙
   ...pluginVue.configs["flat/recommended"],
