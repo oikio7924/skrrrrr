@@ -2,7 +2,7 @@
   <div class="app-container">
     <header class="header">
       <!-- 왼쪽 로고 이미지 -->
-      <img src="@/assets/Harudam_logo.png" alt="Harudam Logo" class="header-logo" />
+      <img src="@/assets/Harudam_logo.png" alt="하루담 로고" class="header-logo" />
 
       <!-- 오른쪽 알림 버튼 -->
       <button class="header-button">
@@ -12,13 +12,12 @@
         </svg>
       </button>
     </header>
-   
+  
   </div>
 </template>
 
 <script setup>
-// 이 부분은 비워두거나 필요한 로직만 추가하면 됩니다.
-// defineComponent, export default 등은 필요 없습니다.
+// 필요한 스크립트 로직은 여기에 추가할 수 있습니다.
 </script>
 
 <style scoped>
@@ -29,6 +28,7 @@
   min-height: 200vh; /* 스크롤을 만들기 위해 충분한 높이를 설정 */
   font-family: 'Inter', sans-serif;
   color: #333;
+  background-color: #eef1f6; /* 이미지 배경과 유사한 색상으로 설정 */
 }
 
 /* 헤더 스타일 */
@@ -41,14 +41,15 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 12px 16px;
-  background: linear-gradient(#e7ebf3, #eef1f6);
-  border-bottom: 1px solid #d8dee8;
-  box-shadow: 0 2px 10px rgba(22, 27, 45, 0.08);
+  padding: 12px 20px;
+  background-color: #fff;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* 부드러운 그림자 */
 }
 
 .header-logo {
-  height: 32px; /* 로고 크기 조절 */
+  height: 36px;
   width: auto;
 }
 
@@ -65,10 +66,5 @@
   color: #7e87a1;
 }
 
-/* 본문 내용 스타일 */
-.content {
-  flex-grow: 1;
-  padding: 20px;
-  line-height: 1.6;
-}
+
 </style>
