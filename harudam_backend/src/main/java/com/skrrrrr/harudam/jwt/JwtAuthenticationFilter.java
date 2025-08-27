@@ -14,33 +14,52 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 
+/**
+ * JWT 인증 필터
+ * - Authorization 헤더의 Bearer ACCESS 토큰만 허용
+ * - REFRESH 토큰은 인증용으로는 거부
+ */
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // 1. Request Header에서 토큰을 꺼냅니다.
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+
+        // 1. Authorization 헤더에서 토큰 추출
         String token = resolveToken(request);
 
-        // 2. 토큰이 유효한지 확인합니다.
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            // 토큰이 유효하면, 토큰에서 사용자 ID를 추출하여 인증 정보를 생성합니다.
+        // 2. 유효한 ACCESS 토큰인지 검증
+        if (token != null && jwtTokenProvider.validateAccessToken(token)) {
             Long userId = jwtTokenProvider.getUserIdFromToken(token);
-            UserDetails userDetails = new User(userId.toString(), "", Collections.emptyList());
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-            
-            // SecurityContext에 인증 정보를 저장합니다.
-            // 이렇게 하면 해당 요청을 처리하는 동안 사용자가 인증된 것으로 간주됩니다.
+
+            UserDetails userDetails = new User(
+                    userId.toString(),
+                    "",
+                    Collections.emptyList()
+            );
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            "",
+                            userDetails.getAuthorities()
+                    );
+
+            // SecurityContext 에 저장 → 컨트롤러에서 @AuthenticationPrincipal 등으로 접근 가능
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
-        // 3. 다음 필터로 요청을 전달합니다.
+        // 3. 다음 필터 진행
         filterChain.doFilter(request, response);
     }
 
-    // Request Header에서 "Bearer " 접두사를 제거하고 순수한 토큰 값만 추출합니다.
+    // Authorization 헤더 → Bearer <token> 파싱
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {

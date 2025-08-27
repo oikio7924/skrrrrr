@@ -1,5 +1,0 @@
-package com.skrrrrr.harudam.auth.dto;
-
-public class KakaoUserMe {
-
-}
