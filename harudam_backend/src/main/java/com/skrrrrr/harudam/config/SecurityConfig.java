@@ -48,7 +48,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // ★ 소셜 로그인/인증 관련 공개
                 .requestMatchers("/api/auth/**").permitAll()
-//                .requestMatchers("/api/send-verification-code", "/api/verify-code").permitAll()
+                .requestMatchers("/api/test/**").permitAll()
+                .requestMatchers("/api/send-verification-code", "/api/verify-code").permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
             )
