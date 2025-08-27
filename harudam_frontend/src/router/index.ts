@@ -17,7 +17,7 @@ import Mypage from '@/views/Mypage.vue'
 // import Main_Parent from '@/views/Main_Parent.vue'
 import Schedule_Child from '@/views/Schedule_Child.vue'
 import { useUiStore } from '@/stores/ui'
-
+import Notification from '@/views/Notification.vue'
 
 
 const router = createRouter({
@@ -26,6 +26,11 @@ const router = createRouter({
     {
       path: '/', // 앱 첫 화면 온보딩화면
       redirect: { name: 'Onboarding' },
+    },
+    {
+      path: '/notification',
+      name: 'Notification',
+      component: Notification
     },
     {
       path: '/onboarding',
