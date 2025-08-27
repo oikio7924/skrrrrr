@@ -1,7 +1,14 @@
 <template>
-  <!-- ✅ 공통 헤더 추가 -->
-    <Header />
-  <!-- 상단 배너 -->
+  <!-- ✅ 타임라인 헤더 -->
+  <header class="timeline-header">
+    <button class="back-btn" @click="goBack" aria-label="뒤로가기">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+        class="icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    <h1 class="title">그림일기 피드</h1>
+  </header>
   <div class="profile-banner"></div>
 
   <!-- 프로필 -->
@@ -27,12 +34,7 @@
 
   <!-- 그림일기 피드 -->
   <section class="diary-feed">
-    <div
-      v-for="(item, idx) in diaries"
-      :key="idx"
-      class="diary-card"
-      @click="goToDiary(item)"
-    >
+    <div v-for="(item, idx) in diaries" :key="idx" class="diary-card" @click="goToDiary(item)">
       <div class="diary-thumb"></div>
       <p class="diary-caption">그림일기 {{ item }}</p>
     </div>
@@ -43,10 +45,15 @@
 </template>
 
 <script setup lang="ts">
+
+
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import FooterNav from "@/components/FooterNav.vue"
-import Header from "@/components/Header.vue"
+
+function goBack() {
+  router.push({ name: "main_child"})
+}
 
 const parent = ref({
   name: "아버지",
@@ -106,9 +113,58 @@ body,
   0% {
     background-position: 0% 50%;
   }
+
   100% {
     background-position: 100% 50%;
   }
+}
+
+/* ✅ 타임라인 헤더 */
+.timeline-header {
+  position: sticky;              /* 스크롤 내려도 상단 고정 */
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;       /* 중앙에 타이틀 */
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.back-btn {
+  position: absolute;            /* 중앙 타이틀 영향 X */
+  left: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.back-btn .icon {
+  width: 28px;
+  height: 28px;
+  stroke: #6d28d9;   /* 보라색 아이콘 */
+}
+
+.timeline-header .title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+/* ✅ 타임라인 본문 */
+.timeline {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0;
+  margin: 0;
 }
 
 /* 프로필 */
@@ -119,6 +175,7 @@ body,
   margin-top: -80px;
   text-align: center;
 }
+
 .profile-photo {
   width: clamp(150px, 20vw, 180px);
   height: clamp(150px, 20vw, 180px);
@@ -133,12 +190,14 @@ body,
   margin-bottom: 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
 .profile-name {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
   color: #222;
 }
+
 .profile-sub {
   margin-top: 0.3rem;
   font-size: 1rem;
@@ -153,12 +212,14 @@ body,
   margin: 1.5rem 0;
   text-align: center;
 }
+
 .stat strong {
   display: block;
   font-size: 1.4rem;
   font-weight: 700;
   color: #4b3fae;
 }
+
 .stat span {
   font-size: 0.9rem;
   color: #666;
@@ -180,20 +241,24 @@ body,
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
+
 .diary-card {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   transition: transform 0.2s;
 }
+
 .diary-card:hover {
   transform: translateY(-4px);
 }
+
 .diary-thumb {
   background: #e8e1ff;
   aspect-ratio: 1 / 1;
 }
+
 .diary-caption {
   margin: 0.5rem;
   font-size: 0.9rem;

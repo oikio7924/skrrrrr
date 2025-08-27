@@ -18,7 +18,8 @@ import Mypage from '@/views/Mypage.vue'
 import Schedule_Child from '@/views/Schedule_Child.vue'
 import { useUiStore } from '@/stores/ui'
 import Notification from '@/views/Notification.vue'
-
+import Authentication_code from '@/views/Authentication_code.vue'
+import Signup_Complete from '@/views/Signup_Complete.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -122,18 +123,18 @@ const router = createRouter({
       name: 'header',
       component: () => import('@/components/Header.vue'),
     },
-  {
-    path: '/update',
-    name: 'update',
-    component: () => import('@/views/Update.vue'),
-    meta: { showFooter: false },
+    {
+      path: '/update',
+      name: 'update',
+      component: () => import('@/views/Update.vue'),
+      meta: { showFooter: false },
     },
-  {
-    path: '/loading', //테스트용
-    name: 'loading',
-    component: () => import('@/views/Loading.vue'),
-    meta: { showFooter: false },
-  },
+    {
+      path: '/loading', //테스트용
+      name: 'loading',
+      component: () => import('@/views/Loading.vue'),
+      meta: { showFooter: false },
+    },
     {
       path: '/memoir',
       name: 'memoir',
@@ -160,21 +161,33 @@ const router = createRouter({
     },
 
     {
-      path: '/setting',
+      path: '/mypage/setting',
       name: 'setting',
       component: () => import('@/views/Setting.vue'),
+      meta: { showFooter: true },
     },
     {
-      path : '/schedule_c',
-      name : 'schedule_c',
-      component : Schedule_Child
-    }
+      path: '/schedule_c',
+      name: 'schedule_c',
+      component: Schedule_Child,
+    },
+    {
+      path: '/mypage/authentication',
+      name: 'authentication',
+      component: () => import('@/views/Authentication_code.vue'),
+      meta: { showFooter: true },
+    },
+
+    {
+      path: '/signupcomplete',
+      name: 'signupcomplete',
+      component: Signup_Complete,
+    },
   ],
 
   scrollBehavior() {
     return { top: 0 }
   },
-
 })
 // === 로딩 자동 표시 훅들 ===
 router.beforeEach((to, from, next) => {

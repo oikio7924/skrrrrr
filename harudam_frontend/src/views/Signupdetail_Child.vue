@@ -4,7 +4,7 @@
       <div class="app-container">
         <div class="page">
           <header class="topbar">
-            <button class="icon-btn" @click="goBack" aria-label="뒤로가기">✕</button>
+            <button class="icon-btn" @click="$router.push({ name: 'signup' })" aria-label="뒤로가기">✕</button>
             <h1 class="title">회원가입</h1>
             <div class="spacer" />
           </header>
@@ -17,7 +17,7 @@
                 <label class="row">
                   <span class="label">아이디(이메일)</span>
                   <div class="field">
-                    <input v-model.trim="form.email" type="email" inputmode="email" placeholder="이메일 입력"
+                    <input v-model.trim="form.email" type="email" inputmode="email" placeholder="아이디 or 이메일 입력"
                       :readonly="!!prefilled.email" autocomplete="email" />
                     <button class="micro-btn" type="button" @click="checkEmail" :disabled="!form.email">
                       중복확인
@@ -74,9 +74,11 @@
                 <label class="row">
                   <span class="label">생년월일</span>
                   <div class="field">
-                    <input v-model="form.birthday" type="date" placeholder="YYYY-MM-DD" />
+                    <input v-model="form.birthday" type="date" placeholder="생년월일 선택" />
                   </div>
                 </label>
+
+
 
                 <fieldset class="row">
                   <legend class="label">성별</legend>
@@ -104,7 +106,8 @@
                   <span class="label">인증번호</span>
                   <div class="field">
                     <input v-model.trim="form.smsCode" type="text" inputmode="numeric" placeholder="인증번호 입력" />
-                    <button class="micro-btn" type="button" @click="verifySMS" :disabled="!/^\d{6}$/.test(form.smsCode)">인증확인</button>
+                    <button class="micro-btn" type="button" @click="verifySMS"
+                      :disabled="!/^\d{6}$/.test(form.smsCode)">인증확인</button>
                   </div>
                   <p class="hint" v-if="smsInfo">{{ smsInfo }}</p>
                 </label>
@@ -133,11 +136,13 @@
                       <span v-else>본인의 목소리를 녹음해주세요.</span>
                     </span>
                     <button v-if="!isRecording && !recordedAudioUrl" @click="startRecording" type="button"
-                      class="micro-btn">녹음 시작</button>
+                      class="micro-btn">녹음
+                      시작</button>
                     <button v-if="isRecording" @click="stopRecording" type="button" class="micro-btn stop">녹음
                       중지</button>
                     <button v-if="!isRecording && recordedAudioUrl" @click="resetRecording" type="button"
-                      class="micro-btn">다시 녹음</button>
+                      class="micro-btn">다시
+                      녹음</button>
                     <button v-if="!isRecording && recordedAudioUrl" @click="removeRecording" type="button"
                       class="micro-btn danger">삭제</button>
                   </div>
@@ -206,7 +211,6 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { sendVerificationCode, verifyCode } from '@/api/verification'
-
 const router = useRouter()
 
 const route = useRoute()
@@ -251,6 +255,16 @@ const smsInfo = ref('')
 const photoPreviewUrl = ref<string | null>(null)
 const isRecording = ref(false)
 const recordedAudioUrl = ref<string | null>(null)
+
+const touched = reactive({
+  birthday: false,
+})
+
+const valid = reactive({
+  get birthday() {
+    return !!form.birthday
+  },
+})
 // --- 기존 코드 유지 끝 ---
 
 // ▼▼▼ SMS 인증 관련 로직 수정 및 추가 ▼▼▼
@@ -396,6 +410,15 @@ const allAgreed = computed({
   }
 }
 
+section.card {
+  border: none;
+  background: none;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+}
+
+
 /* 카드 폭/스타일 */
 .app-container {
   width: min(430px, 100%);
@@ -464,23 +487,31 @@ const allAgreed = computed({
 }
 
 .content-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  width: 100%;
-  padding: 0 12px;
-  margin: 0;
+  gap: 20px;
+  /* 섹션 간격 */
 }
 
+
 .card {
-  width: 100%;
-  max-width: none;
+  border: none;
   border-radius: 0;
-  border-left: none;
-  border-right: none;
-  padding: 14px 16px;
+  /* 둥근 테두리 제거 */
+  background: transparent;
+  /* 배경 투명 */
   box-shadow: none;
+  /* 그림자 제거 */
+  padding: 14px 0;
+  /* 안쪽 여백만 */
+  margin-bottom: 0;
+  /* 카드 간격 제거 */
 }
+
 
 .row {
   display: block;
@@ -529,17 +560,22 @@ fieldset.row {
   position: relative;
 }
 
-.field input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  color: transparent;
+/* date input 기본 스타일은 그대로 두세요 */
+.field input[type="date"] {
+  flex: 1;
+  border: none;
   background: transparent;
-  cursor: pointer;
+  outline: none;
+  font-size: 15px;
+  width: 100%;
+  color: var(--text);
 }
+
+.field input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
 
 .micro-btn {
   border: 1px solid #c9b7ff;
@@ -683,8 +719,9 @@ fieldset.row {
 
 .divider {
   border: none;
-  border-top: 1px solid var(--line);
-  margin: 10px 0;
+  /* 선 제거 */
+  margin: 16px 0;
+  /* 간격만 유지 */
 }
 
 .check {
