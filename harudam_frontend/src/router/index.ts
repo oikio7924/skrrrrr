@@ -38,11 +38,10 @@ const router = createRouter({
       name: 'signup',
       component: () => Signup,
     },
-    // {
-    //   path: '/CalendarChild',
-    //   name: 'CalendarChild',
-    //   component: () => import('@/views/Calendar_Child.vue'),
-    // },
+{
+      path: '/calendar_child',
+      name: 'calendar_child',
+      component: () => Calendar_Child,},
     {
       path: '/start',
       name: 'Start',
