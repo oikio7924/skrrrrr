@@ -1,5 +1,0 @@
-package com.skrrrrr.harudam.auth;
-
-public interface AuthCodeRepository {
-
-}

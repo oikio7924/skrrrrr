@@ -1,5 +1,0 @@
-package com.skrrrrr.harudam.jwt;
-
-public class JwtAuthenticationFilter {
-
-}
