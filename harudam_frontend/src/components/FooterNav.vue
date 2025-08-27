@@ -68,16 +68,21 @@ const route = useRoute()
 watch(
   () => route.path,
   async (newPath) => {
-    // 👇 activeIndex를 업데이트하기 전에 nextTick으로 한번 기다려줍니다.
     await nextTick()
 
-    const newIndex = items.findIndex((item) => item.path === newPath)
+    const newIndex = items.findIndex((item) => {
+      // 마이페이지 하위 경로 포함되면 마이페이지 탭 활성화
+      if (item.path === '/mypage' && newPath.startsWith('/mypage')) return true
+      return item.path === newPath
+    })
+
     if (newIndex !== -1) {
       activeIndex.value = newIndex
     }
   },
-  { immediate: true, flush: 'post' } // flush 옵션을 추가하여 렌더링 후에 watch가 실행되도록 합니다.
+  { immediate: true, flush: 'post' }
 )
+
 </script>
 
 <style scoped>
@@ -180,6 +185,7 @@ watch(
   background: radial-gradient(closest-side, rgb(139 125 255 / 70%), transparent);
 }
 .indicator .disc {
+
   position: relative;
   width: 60px;
   height: 60px;

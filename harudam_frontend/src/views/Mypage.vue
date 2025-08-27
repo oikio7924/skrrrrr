@@ -9,7 +9,7 @@
       </div>
 
       <!-- 설정 버튼 -->
-      <button class="settings-btn" @click="goSettings" aria-label="설정">
+      <button class="settings-btn" @click="$router.push({ name: 'setting' })" aria-label="설정">
         <svg class="settings-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.52-.878 3.348.95
@@ -34,7 +34,7 @@
 
     <!-- 상단 메뉴 (이모지 아이콘) -->
     <div class="menu-bar">
-      <div class="menu-item">
+      <div class="menu-item" @click="$router.push({ name: 'authentication' })">
         <span class="icon">🔑</span>
         <span>인증코드</span>
       </div>

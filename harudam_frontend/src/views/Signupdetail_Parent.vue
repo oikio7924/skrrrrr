@@ -3,7 +3,7 @@
     <div class="signup-card" role="dialog" aria-labelledby="signupTitle">
 
       <div class="signup-header">
-        <button class="back-btn" aria-label="뒤로가기" @click="$router.back()">
+        <button class="back-btn" aria-label="뒤로가기" @click="$router.push({ name: 'Signupdetail_child' })">
           <svg viewBox="0 0 24 24" class="icon">
             <path d="M15.5 19.5 8 12l7.5-7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
@@ -105,7 +105,7 @@
         </fieldset>
 
         <button type="submit" class="primary-btn submit-btn" :disabled="!formValid || submitting">
-          하루담 시작하기
+          가입하기
         </button>
       </form>
     </div>
@@ -355,7 +355,7 @@ async function onSubmit() {
     // TODO: 실제 회원가입 API 호출
     await new Promise<void>(r => setTimeout(r, 600))
     alert('회원가입이 완료되었습니다.')
-    router.push({ name: 'main_child' })
+    router.push({ name: 'signupcomplete' })
   } finally {
     submitting.value = false
   }
