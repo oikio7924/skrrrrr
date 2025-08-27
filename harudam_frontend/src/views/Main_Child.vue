@@ -1,5 +1,7 @@
 <template>
   <div class="main-child">
+     <!-- ✅ 공통 헤더 추가 -->
+    <Header />
     <!-- 메인 컨텐츠 -->
     <main class="content">
       <!-- 제목 -->
@@ -90,10 +92,11 @@
 import { defineComponent } from "vue";
 import { useRouter } from "vue-router";
 import FooterNav from "@/components/FooterNav.vue";
+import Header from "@/components/Header.vue"
 
 export default defineComponent({
   name: "MainChild",
-  components: { FooterNav },
+  components: { FooterNav,Header },
   setup() {
     const router = useRouter();
 
@@ -173,8 +176,8 @@ body {
   width: 100%;
   max-width: 720px;
   padding: 20px;
-  padding-bottom: 100px;
-  /* ✅ FooterNav 가리지 않게 여백 */
+  padding-top: 100px;  /* ✅ 헤더 높이 + 여유 간격 */
+  padding-bottom: 100px; /* FooterNav 가리지 않게 */
 }
 
 /* 제목 */

@@ -12,7 +12,7 @@
         </svg>
       </button>
     </header>
-  
+
   </div>
 </template>
 
@@ -25,7 +25,7 @@
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 200vh; /* 스크롤을 만들기 위해 충분한 높이를 설정 */
+  /* min-height: 60vh; 스크롤을 만들기 위해 충분한 높이를 설정 */
   font-family: 'Inter', sans-serif;
   color: #333;
   background-color: #eef1f6; /* 이미지 배경과 유사한 색상으로 설정 */
@@ -33,7 +33,7 @@
 
 /* 헤더 스타일 */
 .header {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   z-index: 50;

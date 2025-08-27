@@ -104,7 +104,7 @@
                   <span class="label">인증번호</span>
                   <div class="field">
                     <input v-model.trim="form.smsCode" type="text" inputmode="numeric" placeholder="인증번호 입력" />
-                    <button class="micro-btn" type="button" @click="verifySMS" :disabled="!form.smsCode">인증확인</button>
+                    <button class="micro-btn" type="button" @click="verifySMS" :disabled="!/^\d{6}$/.test(form.smsCode)">인증확인</button>
                   </div>
                   <p class="hint" v-if="smsInfo">{{ smsInfo }}</p>
                 </label>
@@ -119,7 +119,7 @@
                     <span class="micro-btn">첨부하기</span>
                   </label>
                   <div v-if="photoPreviewUrl" class="photo-preview-wrapper">
-                    <img :src="photoPreviewUrl" alt="자녀 사진 미리보기" class="photo-preview" />
+                    <img :src="photoPreviewUrl" alt="본인 사진 미리보기" class="photo-preview" />
                     <button type="button" class="micro-btn danger" @click="removePhoto">삭제</button>
                   </div>
                 </div>
@@ -204,10 +204,18 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios';
+import { useRouter, useRoute } from 'vue-router'
+import { sendVerificationCode, verifyCode } from '@/api/verification'
 
 const router = useRouter()
+
+const route = useRoute()
+
+// 자녀 ID: 라우트 파라미터(:childId) → 없으면 localStorage('childId') → 없으면 0
+const childIdForVerification = computed(() =>
+  Number(route.params.childId || localStorage.getItem('childId') || 0)
+)
+
 
 // --- 기존 코드 유지 ---
 const prefilled = reactive<{ email?: string; name?: string }>({ email: '', name: '' })
@@ -226,6 +234,12 @@ const form = reactive({
   childPhoto: null as File | null,
   childVoice: null as Blob | null,
 })
+
+// 휴대폰 숫자만 추출 (하이픈/공백 제거)
+const phoneDigits = computed(() => form.phone.replace(/\D/g, ''))
+const phoneValid = computed(() => /^\d{10,11}$/.test(phoneDigits.value))
+
+
 const agreements = reactive({
   termsRequired: false,
   privacyRequired: false,
@@ -241,70 +255,62 @@ const recordedAudioUrl = ref<string | null>(null)
 
 // ▼▼▼ SMS 인증 관련 로직 수정 및 추가 ▼▼▼
 
-// 백엔드에서 보낸 인증번호를 저장할 변수
-const sentOtpCode = ref<string | null>(null)
-
-const phoneValid = computed(() => /^\d{10,11}$/.test(form.phone))
-
 /**
  * @function sendSMS
  * '인증번호 전송' 버튼 클릭 시 실행됩니다.
  * 백엔드 서버에 SMS 발송을 요청합니다.
  */
+
+
+
 async function sendSMS() {
-  if (!phoneValid.value) {
-    alert('올바른 휴대폰 번호를 입력해주세요.');
-    return
-  }
+  if (!phoneValid.value) { alert('올바른 휴대폰 번호를 입력해주세요.'); return }
+  if (!childIdForVerification.value) { alert('자녀 ID가 없습니다. 이전 단계에서 자녀 생성/선택을 먼저 해주세요.'); return }
 
   try {
-    // 1. 6자리 랜덤 인증번호 생성
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    sentOtpCode.value = otp // 사용자가 입력할 값과 비교하기 위해 저장
-
-    // 2. 국가번호(+82)를 포함한 형식으로 변환
-    const fullPhoneNumber = '+82' + form.phone.substring(1)
-
-    // 3. Spring Boot 백엔드 서버에 SMS 발송 API 호출
-    const response = await axios.post('http://localhost:8080/send-sms', {
-      to: fullPhoneNumber,
-      body: `[하루담] 인증번호는 [${otp}] 입니다.`
-    });
-
-    if (response.status === 200) {
+    const res = await sendVerificationCode({
+      childId: childIdForVerification.value,
+      phone: phoneDigits.value,
+    })
+    if (res?.success) {
       smsInfo.value = '인증번호를 전송했습니다. 3분 이내에 입력해 주세요.'
-      alert('인증번호를 전송했습니다.')
+      alert(res.message || '인증번호를 전송했습니다.')
     } else {
-      throw new Error('Server responded with an error');
+      alert(res?.message || '인증번호 전송에 실패했습니다.')
     }
-
-  } catch (error) {
-    console.error('인증번호 전송 API 호출 오류:', error);
-    smsInfo.value = ''
-    alert('인증번호 전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+  } catch (e: any) {
+    console.error(e)
+    alert(e?.response?.data?.message || '인증번호 전송 중 오류가 발생했습니다.')
   }
 }
+
 
 /**
  * @function verifySMS
  * '인증확인' 버튼 클릭 시 실행됩니다.
  * 사용자가 입력한 코드와 전송된 코드를 비교합니다.
  */
-function verifySMS() {
-  if (!form.smsCode) {
-    alert('인증번호를 입력해주세요.');
-    return;
-  }
-  if (form.smsCode === sentOtpCode.value) {
-    form.phoneVerified = true // '인증됨' 상태로 변경
-    smsInfo.value = '✅ 인증이 완료되었습니다.'
-    alert('휴대폰 인증이 완료되었습니다.')
-  } else {
+
+async function verifySMS() {
+  if (!/^\d{6}$/.test(form.smsCode)) { alert('6자리 인증번호를 입력해주세요.'); return }
+  try {
+    const res = await verifyCode({ phone: phoneDigits.value, code: form.smsCode })
+    if (res?.success) {
+      form.phoneVerified = true
+      smsInfo.value = '✅ 인증이 완료되었습니다.'
+      alert(res.message || '인증 완료')
+    } else {
+      form.phoneVerified = false
+      smsInfo.value = '인증번호가 올바르지 않습니다.'
+      alert(res?.message || '인증번호가 올바르지 않습니다.')
+    }
+  } catch (e: any) {
     form.phoneVerified = false
-    smsInfo.value = '인증번호가 일치하지 않습니다. 다시 확인해주세요.'
-    alert('인증번호가 올바르지 않습니다.')
+    console.error(e)
+    alert(e?.response?.data?.message || '인증 처리 중 오류가 발생했습니다.')
   }
 }
+
 
 // --- 나머지 함수들은 기존 코드와 동일하게 유지 ---
 onMounted(() => { if (prefilled.email) form.email = prefilled.email; if (prefilled.name) form.name = prefilled.name })
@@ -322,7 +328,16 @@ interface DaumPostcode { open(): void; }
 interface Daum { Postcode: new (options: { oncomplete: (data: DaumPostcodeData) => void; }) => DaumPostcode; }
 declare global { interface Window { daum?: Daum; } }
 function execDaumPostcode() { new window.daum!.Postcode({ oncomplete: (data: DaumPostcodeData) => { form.address = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress } }).open() }
-function handleAddressSearch() { if (window.daum && window.daum.Postcode) execDaumPostcode(); else { const script = document.createElement('script'); script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'; script.onload = () => execDaumPostcode(); document.head.appendChild(script) } }
+function handleAddressSearch() {
+  if (window.daum && window.daum.Postcode) execDaumPostcode();
+  else {
+    const script = document.createElement('script');
+    script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'; // ← https 고정
+    script.onload = () => execDaumPostcode();
+    document.head.appendChild(script)
+  }
+}
+
 function submit() { if (!form.email) { alert('아이디(이메일)를 입력해주세요.'); return; } if (!passwordsOk.value) { alert('비밀번호를 확인해주세요. (입력 및 일치 여부)'); return; } if (!form.name) { alert('이름을 입력해주세요.'); return; } if (!form.birthday) { alert('생년월일을 입력해주세요.'); return; } if (!form.gender) { alert('성별을 선택해주세요.'); return; } if (!phoneValid.value) { alert('올바른 휴대폰 번호를 입력해주세요.'); return; } if (!form.phoneVerified) { alert('휴대폰 인증을 완료해주세요.'); return; } if (!requiredAgreed.value) { alert('필수 약관에 동의해주세요.'); return; } const payload = { ...form, agreements: { ...agreements } }; console.log('submit payload', payload); alert(' 부모정보 입력 화면으로 이동합니다.'); router.push({ name: 'Signupdetail_parent' }) }
 function removePhoto() { form.childPhoto = null; photoPreviewUrl.value = null }
 function removeRecording() { form.childVoice = null; recordedAudioUrl.value = null }

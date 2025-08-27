@@ -1,4 +1,6 @@
 <template>
+  <!-- ✅ 공통 헤더 추가 -->
+    <Header />
   <!-- 상단 배너 -->
   <div class="profile-banner"></div>
 
@@ -44,6 +46,7 @@
 import { ref } from "vue"
 import { useRouter } from "vue-router"
 import FooterNav from "@/components/FooterNav.vue"
+import Header from "@/components/Header.vue"
 
 const parent = ref({
   name: "아버지",

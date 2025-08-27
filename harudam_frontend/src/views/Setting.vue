@@ -1,7 +1,17 @@
 <template>
   <div class="settings">
-    <!-- 헤더 -->
-    <h2 class="header">환경설정</h2>
+    <!-- ✅ 헤더 -->
+    <header class="settings-header">
+      <button class="back-btn" @click="goBack" aria-label="뒤로가기">
+        <!-- 화살표 SVG -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+             viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
+             class="arrow-icon">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+      </button>
+      <h2 class="header-title">환경설정</h2>
+    </header>
 
     <!-- 리스트 -->
     <section class="settings-card">
@@ -38,6 +48,12 @@
 
 <script setup lang="ts">
 import FooterNav from "@/components/FooterNav.vue"
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+function goBack() {
+  router.push("/mypage") // ✅ 마이페이지로 이동
+}
 </script>
 
 <style scoped>
@@ -49,15 +65,40 @@ import FooterNav from "@/components/FooterNav.vue"
   font-family: "Inter", sans-serif;
 }
 
-/* 헤더 */
-.header {
-  font-size: 1.2rem;
-  font-weight: 700;
+/* ✅ 헤더 */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 가운데 제목 정렬 */
+  position: relative;
+  padding: 1rem;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   margin-bottom: 1.5rem;
-  color: #4c1d95;
 }
 
-/* 리스트 카드 */
+.back-btn {
+  position: absolute;
+  left: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.arrow-icon {
+  width: 28px;
+  height: 28px;
+  color: #9a7dff;
+}
+
+.header-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #6d28d9;
+}
+
+/* 기존 스타일 유지 */
 .settings-card {
   background: #fff;
   border-radius: 12px;
@@ -83,12 +124,11 @@ import FooterNav from "@/components/FooterNav.vue"
   background: #f3f0ff;
 }
 
-/* 버전 */
 .version-card {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
   padding: 1rem;
   font-size: 0.9rem;
 }
@@ -112,12 +152,11 @@ import FooterNav from "@/components/FooterNav.vue"
   margin-left: auto;
 }
 
-/* 로그아웃 카드 */
 .logout-card {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 .logout-btn {
   width: 100%;
@@ -136,9 +175,9 @@ import FooterNav from "@/components/FooterNav.vue"
   background: #f3f0ff;
 }
 
-/* 회원탈퇴 */
 .withdraw {
   text-align: center;
+  margin-top: 2rem; /* ✅ 회원탈퇴 버튼 위에 여백 */
 }
 .withdraw-btn {
   background: none;
