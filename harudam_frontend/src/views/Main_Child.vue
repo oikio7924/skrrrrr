@@ -57,7 +57,6 @@
       <!-- 일정 -->
       <section class="card schedule-card">
         <div class="schedule-header">
-          <!-- 일정 아이콘 -->
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14
                      a2 2 0 002-2V7a2 2 0 00-2-2H5
@@ -67,17 +66,13 @@
         </div>
 
         <ul class="schedule-list">
-          <li class="schedule-item" @click="goToDetail('2023-08-24')">
-            <span class="date">8/24 (일)</span>
-            <span class="text">밭에서 깨털기</span>
+          <li v-if="eventStore.sortedEvents.length === 0" class="schedule-item-empty">
+            등록된 일정이 없어요.
           </li>
-          <li class="schedule-item" @click="goToDetail('2023-08-23')">
-            <span class="date">8/23 (토)</span>
-            <span class="text">오전 8시 소 밥주기</span>
-          </li>
-          <li class="schedule-item" @click="goToDetail('2023-08-22')">
-            <span class="date">8/22 (금)</span>
-            <span class="text">손자와 낚시</span>
+          <li v-for="event in eventStore.sortedEvents.slice(-3)" :key="event.id" class="schedule-item"
+            @click="goToDetail(event.date)">
+            <span class="date">{{ formatDate(event.date) }}</span>
+            <span class="text">{{ event.title }}</span>
           </li>
         </ul>
       </section>
@@ -89,20 +84,26 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import FooterNav from "@/components/FooterNav.vue";
 import Header from "@/components/Header.vue"
+import { useEventStore } from '@/stores/eventStore';
 
 export default defineComponent({
   name: "MainChild",
   components: { FooterNav,Header },
   setup() {
     const router = useRouter();
+    const eventStore = useEventStore();
+
+    onMounted(() => {
+      eventStore.loadEvents(); // 컴포넌트 마운트 시 일정 불러오기
+    });
 
     // ✅ 일정 상세 페이지 이동
     const goToDetail = (date: string) => {
-      router.push({ name: "dayPage", params: { date } });
+      router.push({ name: 'schedule_c', params: { date } });
     };
 
     // ✅ 그림일기 상세 페이지 이동
@@ -119,8 +120,12 @@ export default defineComponent({
     const goToMemoir = () => {
       router.push({ name: "memoir" });
     };
+    const formatDate = (dateString: string) => {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return `${month}월 ${day}일`;
+    };
 
-    return { goToDetail, goToDiaryDetail, goToCalendar, goToMemoir };
+    return { goToDetail, goToDiaryDetail, goToCalendar, goToMemoir, eventStore, formatDate};
   }
 });
 </script>

@@ -15,6 +15,7 @@ import Signupdetail_Child from '@/views/Signupdetail_Child.vue'
 import Signupdetail_Parent from '@/views/Signupdetail_Parent.vue'
 import Mypage from '@/views/Mypage.vue'
 // import Main_Parent from '@/views/Main_Parent.vue'
+import Schedule_Child from '@/views/Schedule_Child.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -147,6 +148,11 @@ const router = createRouter({
       name: 'setting',
       component: () => import('@/views/Setting.vue'),
     },
+    {
+      path : '/schedule_c',
+      name : 'schedule_c',
+      component : Schedule_Child
+    }
   ],
 
   scrollBehavior() {
