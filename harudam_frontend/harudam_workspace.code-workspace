@@ -1,11 +1,10 @@
 {
-	"folders": [
-		{
-			"path": "../harudam_backend"
-		},
-		{
-			"path": "."
-		}
-	],
-	"settings": {}
+    "folders": [
+        {
+            "path": "."
+        },
+        {
+            "path": "../harudam_backend"
+        }
+    ]
 }

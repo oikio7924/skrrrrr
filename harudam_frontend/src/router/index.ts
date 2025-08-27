@@ -16,6 +16,9 @@ import Signupdetail_Parent from '@/views/Signupdetail_Parent.vue'
 import Mypage from '@/views/Mypage.vue'
 // import Main_Parent from '@/views/Main_Parent.vue'
 import Schedule_Child from '@/views/Schedule_Child.vue'
+import { useUiStore } from '@/stores/ui'
+
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,10 +42,6 @@ const router = createRouter({
       name: 'signup',
       component: () => Signup,
     },
-{
-      path: '/calendar_child',
-      name: 'calendar_child',
-      component: () => Calendar_Child,},
     {
       path: '/start',
       name: 'Start',
@@ -118,6 +117,18 @@ const router = createRouter({
       name: 'header',
       component: () => import('@/components/Header.vue'),
     },
+  {
+    path: '/update',
+    name: 'update',
+    component: () => import('@/views/Update.vue'),
+    meta: { showFooter: false },
+    },
+  {
+    path: '/loading', //테스트용
+    name: 'loading',
+    component: () => import('@/views/Loading.vue'),
+    meta: { showFooter: false },
+  },
     {
       path: '/memoir',
       name: 'memoir',
@@ -158,6 +169,21 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 }
   },
+
+})
+// === 로딩 자동 표시 훅들 ===
+router.beforeEach((to, from, next) => {
+  const noLoading = (to.meta as any)?.noLoading // TS 회피
+  if (!noLoading) useUiStore().start()
+  next()
+})
+
+router.afterEach(() => {
+  useUiStore().stop()
+})
+
+router.onError(() => {
+  useUiStore().reset()
 })
 
 export default router
