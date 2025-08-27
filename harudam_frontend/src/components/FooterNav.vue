@@ -145,7 +145,7 @@ watch(
 .indicator {
   position: absolute;
   left: 16px;
-  bottom: calc(39px + env(safe-area-inset-bottom));
+  bottom: calc(40px + env(safe-area-inset-bottom));
   width: calc((100% - 32px) / 4);
   display: grid;
   place-items: center;

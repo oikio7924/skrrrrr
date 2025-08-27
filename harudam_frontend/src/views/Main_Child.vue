@@ -7,7 +7,7 @@
       <p class="subtitle">어떤 하루를 보내시고 계실까요?</p>
 
       <!-- 그림일기 카드 -->
-      <section class="card" @click="goProfileDiary">
+      <section class="card" @click="goToDiaryDetail('2023-08-22')">
         <span class="badge">8월 22일 그림일기</span>
         <div class="image-box">Image</div>
 
@@ -20,7 +20,7 @@
 
         <!-- 대표 감정 -->
         <div class="emotion-box">
-          <span class="emoji">😌</span>
+          <span class="emoji">😊</span>
           <div class="emotion-text">
             <p class="label">대표 감정</p>
             <p class="desc">행복, 평온함</p>
@@ -28,55 +28,57 @@
         </div>
       </section>
 
-        <!-- 버튼 -->
-        <section class="button-group">
-          <button class="btn">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0
-                00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            달력
-          </button>
+      <!-- 버튼 -->
+      <!-- 버튼 -->
+      <section class="button-group">
+        <button class="btn" @click="goToCalendar">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14
+               a2 2 0 002-2V7a2 2 0 00-2-2H5
+               a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          달력
+        </button>
 
-          <button class="btn">
-            <!-- 📖 책 아이콘 -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 19.5V6.5A2.5 2.5 0 016.5 4H20v15H6.5A2.5 2.5 0 014 19.5z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M20 4v15a2 2 0 01-2 2H6.5a2.5 2.5 0 01-2.5-2.5" />
-            </svg>
-            자서전
-          </button>
-        </section>
+        <button class="btn" @click="goToMemoir">
+          <!-- 📖 책 아이콘 -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5V6.5A2.5 2.5 0 016.5 4H20v15H6.5
+               A2.5 2.5 0 014 19.5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 4v15a2 2 0 01-2 2H6.5
+               a2.5 2.5 0 01-2.5-2.5" />
+          </svg>
+          자서전
+        </button>
+      </section>
 
-        <!-- 일정 -->
-        <section class="card schedule-card">
-          <div class="schedule-header">
-            <!-- 일정 아이콘 -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0
-              002-2V7a2 2 0 00-2-2H5a2 2 0
-              00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <h3 class="card-title">최근 주요 일정</h3>
-          </div>
+      <!-- 일정 -->
+      <section class="card schedule-card">
+        <div class="schedule-header">
+          <!-- 일정 아이콘 -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14
+                     a2 2 0 002-2V7a2 2 0 00-2-2H5
+                     a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <h3 class="card-title">최근 주요 일정</h3>
+        </div>
 
-          <ul class="schedule-list">
-            <li class="schedule-item" @click="goToDetail('2023-08-24')">
-              <span class="date">8/24 (일)</span>
-              <span class="text">밭에서 깨털기</span>
-            </li>
-            <li class="schedule-item" @click="goToDetail('2023-08-23')">
-              <span class="date">8/23 (토)</span>
-              <span class="text">오전 8시 소 밥주기</span>
-            </li>
-            <li class="schedule-item" @click="goToDetail('2023-08-22')">
-              <span class="date">8/22 (금)</span>
-              <span class="text">손자와 낚시</span>
-            </li>
-          </ul>
-        </section>
+        <ul class="schedule-list">
+          <li class="schedule-item" @click="goToDetail('2023-08-24')">
+            <span class="date">8/24 (일)</span>
+            <span class="text">밭에서 깨털기</span>
+          </li>
+          <li class="schedule-item" @click="goToDetail('2023-08-23')">
+            <span class="date">8/23 (토)</span>
+            <span class="text">오전 8시 소 밥주기</span>
+          </li>
+          <li class="schedule-item" @click="goToDetail('2023-08-22')">
+            <span class="date">8/22 (금)</span>
+            <span class="text">손자와 낚시</span>
+          </li>
+        </ul>
+      </section>
     </main>
 
     <!-- ✅ FooterNav -->
@@ -95,37 +97,84 @@ export default defineComponent({
   setup() {
     const router = useRouter();
 
+    // ✅ 일정 상세 페이지 이동
     const goToDetail = (date: string) => {
       router.push({ name: "dayPage", params: { date } });
     };
 
-    const goProfileDiary = () => {
-      router.push({ name: "profile_diary" });
+    // ✅ 그림일기 상세 페이지 이동
+    const goToDiaryDetail = (date: string) => {
+      router.push({ name: "profile_diary", params: { date } });
     };
 
-    return { goToDetail, goProfileDiary };
+    // ✅ 달력 이동
+    const goToCalendar = () => {
+      router.push({ name: "calendar_child" });
+    };
+
+    // ✅ 자서전 이동
+    const goToMemoir = () => {
+      router.push({ name: "memoir" });
+    };
+
+    return { goToDetail, goToDiaryDetail, goToCalendar, goToMemoir };
   }
 });
 </script>
 
 
-<style scoped>
+<style>
 #app {
+  background: #F8FAFC !important;
+  min-height: 100%;
+  /* 100vh 대신 100% */
+  display: flex;
+  justify-content: center;
+}
+
+.title {
+  font-weight: bold !important;
+}
+
+html,
+body {
+  height: 100%;
+  /* 전체 높이 */
+  overflow-y: auto;
+  /* ✅ 스크롤 활성화 */
   background: #F8FAFC;
-  min-height: 100vh;
+  /* 전체 배경 */
+}
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #F8FAFC !important;
+  /* 배경색 유지 */
 }
 
 .main-child {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  /* min-height: 100vh; ✅ 삭제 */
+}
+
+#app {
+  display: flex;
+  justify-content: center;
+  background: #F8FAFC;
   min-height: 100vh;
 }
 
 .content {
   flex: 1;
+  width: 100%;
   max-width: 720px;
-  margin: 0 auto;
   padding: 20px;
+  padding-bottom: 100px;
+  /* ✅ FooterNav 가리지 않게 여백 */
 }
 
 /* 제목 */
@@ -298,20 +347,23 @@ export default defineComponent({
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
 }
 
 .schedule-item:hover {
   background: #f3e8ff;
+  /* 연보라 배경 */
 }
 
 .schedule-item:hover .date,
 .schedule-item:hover .text {
   color: #6d28d9;
+  /* 진보라 글씨 */
 }
 
 .schedule-item:active {
   background: #e9d5ff;
+  /* 클릭 시 더 진한 보라 */
   transform: scale(0.98);
 }
 
