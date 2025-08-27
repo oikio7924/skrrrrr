@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'OnboardingView' })   // 👈 ESLint 경고 해결(두 단어 이름)
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
