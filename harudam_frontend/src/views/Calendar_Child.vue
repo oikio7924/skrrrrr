@@ -34,7 +34,6 @@
           </svg>
         </button>
       </div>
-      </main>
 
       <!-- ▣ 월/주 달력 카드 -->
       <section id="calendar-body" class="mb-4">
@@ -45,12 +44,21 @@
         </div>
 
         <!-- 날짜 그리드 -->
-        <div id="calendar-grid" class="text-center" :class="{ shifted: viewMode==='week' }" :style="gridStyle" ref="gridRef">
+        <div
+          id="calendar-grid"
+          class="text-center"
+          :class="{ shifted: viewMode==='week' }"
+          :style="gridStyle"
+          ref="gridRef"
+        >
           <div
             v-for="(week, wIdx) in weeks"
             :key="wIdx"
             class="week-row"
-            :class="{ 'hidden-row': viewMode==='week' && wIdx!==selectedWeekIndex, 'above': viewMode==='week' && wIdx===selectedWeekIndex }"
+            :class="{
+              'hidden-row': viewMode==='week' && wIdx!==selectedWeekIndex,
+              'above': viewMode==='week' && wIdx===selectedWeekIndex
+            }"
             :ref="el => setWeekRef(wIdx, el)"
           >
             <div
@@ -61,8 +69,10 @@
             >
               <template v-if="cell">
                 <div v-if="eventDaysSet.has(cell.key)" class="event-dot"></div>
-                <span class="date-chip"
-                      :class="{ 'selected-badge': isSelected(cell), 'today-ring': isToday(cell) && !isSelected(cell) }">
+                <span
+                  class="date-chip"
+                  :class="{ 'selected-badge': isSelected(cell), 'today-ring': isToday(cell) && !isSelected(cell) }"
+                >
                   {{ cell.day }}
                 </span>
               </template>
@@ -70,18 +80,30 @@
           </div>
         </div>
 
-        <!-- ✅ 카드 우하단 모서리 FAB (월 보기에서만) -->
+        <!-- ✅ 카드 우하단 모서리 FAB (주석 처리: 일정 생성 비활성) -->
+        <!--
         <button id="card-add-event-fab" v-show="viewMode==='month'" aria-label="일정 등록" title="일정 등록" @click="openEventModal">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
             <path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"/>
           </svg>
         </button>
+        -->
       </section>
 
       <!-- ▣ 상세 시트(주간 보기) -->
-      <section id="details-view" :class="viewMode==='week' ? 'sheet-show' : 'sheet-hidden'" :style="{ marginTop: detailsMarginTop }">
+      <section
+        id="details-view"
+        :class="viewMode==='week' ? 'sheet-show' : 'sheet-hidden'"
+        :style="{ marginTop: detailsMarginTop }"
+      >
         <!-- 월 보기로 -->
-        <button id="btn-back-fab" :class="{ hidden: viewMode!=='week' }" aria-label="월 보기로" title="월 보기로" @click="backToMonth">
+        <button
+          id="btn-back-fab"
+          :class="{ hidden: viewMode!=='week' }"
+          aria-label="월 보기로"
+          title="월 보기로"
+          @click="backToMonth"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
             <path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a5 5 0 015 5v4a1 1 0 11-2 0v-4a3 3 0 00-3-3H5.414l2.293 2.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/>
           </svg>
@@ -129,7 +151,8 @@
         </div>
       </section>
 
-      <!-- ▣ 일정 등록 모달(바텀시트): 항상 최상단 -->
+      <!-- ▣ 일정 등록 모달(바텀시트) — 전부 주석 처리 -->
+      <!--
       <div id="event-modal" :class="{ show: showModal }" aria-hidden="true" role="dialog">
         <div class="backdrop" @click="closeEventModal"></div>
         <div class="sheet p-4">
@@ -140,49 +163,17 @@
               <span class="sr-only">닫기</span>✕
             </button>
           </div>
-
           <form class="space-y-3" @submit.prevent="saveEvent">
-            <div>
-              <label class="label">날짜</label>
-              <input v-model="form.date" type="date" class="input" required />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="label">시간</label>
-                <input v-model="form.time" type="time" class="input" />
-              </div>
-              <div>
-                <label class="label">종류</label>
-                <select v-model="form.type" class="input">
-                  <option value="일정">일정</option>
-                  <option value="hospital">병원</option>
-                  <option value="community">복지관</option>
-                  <option value="family">가족</option>
-                  <option value="etc">기타</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="label">제목</label>
-              <input v-model.trim="form.title" type="text" class="input" placeholder="예: 예방접종, 내과 외래" required />
-            </div>
-            <div>
-              <label class="label">메모</label>
-              <textarea v-model="form.note" class="input" rows="3" placeholder="메모를 입력하세요(선택)"></textarea>
-            </div>
-
-          <div class="pt-2 flex gap-2">
-            <button type="button" class="flex-1 h-10 rounded-xl border hover:bg-gray-50" @click="closeEventModal">취소</button>
-            <button type="submit" class="flex-1 h-10 rounded-xl bg-[var(--lav-500)] text-white hover:brightness-110">저장</button>
-          </div>
-        </form>
+            ...
+          </form>
+        </div>
       </div>
-    </div>
+      -->
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-/** ✅ ESLint ‘multi-word’ 회피용(선택) */
 defineOptions({ name: 'CalendarChildView' })
 
 import type { ComponentPublicInstance } from 'vue'
@@ -236,8 +227,11 @@ const weeks = computed<(Cell | null)[][]>(() => {
     const row: (Cell | null)[] = []
     for (let c = 0; c < 7; c++) {
       if (r === 0 && c < firstDow) row.push(null)
-      else if (d <= lastDate) { const dateObj = new Date(year.value, month.value, d); row.push({ dateObj, key: toKey(dateObj), day: d }); d++ }
-      else row.push(null)
+      else if (d <= lastDate) {
+        const dateObj = new Date(year.value, month.value, d)
+        row.push({ dateObj, key: toKey(dateObj), day: d })
+        d++
+      } else row.push(null)
     }
     rows.push(row)
   }
@@ -256,7 +250,8 @@ const eventDaysSet = computed<Set<string>>(() => {
 /* 선택 텍스트/페이로드 */
 const selectedDateText = computed(() => {
   if (!selectedDate.value) return ''
-  const d = selectedDate.value, dow = d.toLocaleDateString('ko-KR', { weekday: 'long' })
+  const d = selectedDate.value
+  const dow = d.toLocaleDateString('ko-KR', { weekday: 'long' })
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${dow}`
 })
 const currentPayload = computed<DayPayload>(() => {
@@ -270,7 +265,7 @@ const weekRefs = ref<Array<HTMLElement | null>>([])
 const gridStyle = ref<Record<string, string>>({})
 const detailsMarginTop = ref('0px')
 
-/* HTMLElement 안전 추출 (any 없이) */
+/* HTMLElement 안전 추출 */
 type MaybeWithEl = { $el: unknown }
 function isHTMLElement(v: unknown): v is HTMLElement { return v instanceof HTMLElement }
 function has$el(v: unknown): v is MaybeWithEl {
@@ -278,11 +273,8 @@ function has$el(v: unknown): v is MaybeWithEl {
 }
 function setWeekRef(index: number, el: Element | ComponentPublicInstance | null) {
   let dom: HTMLElement | null = null
-  if (isHTMLElement(el)) {
-    dom = el
-  } else if (has$el(el) && isHTMLElement((el as MaybeWithEl).$el)) {
-    dom = (el as MaybeWithEl).$el as HTMLElement
-  }
+  if (isHTMLElement(el)) dom = el
+  else if (has$el(el) && isHTMLElement((el as MaybeWithEl).$el)) dom = (el as MaybeWithEl).$el as HTMLElement
   weekRefs.value[index] = dom
 }
 
@@ -298,11 +290,17 @@ function isToday(cell?: Cell | null) {
 
 /* 주간 시트 위치 보정 */
 function adjustWeekPosition() {
-  const grid = gridRef.value, row = weekRefs.value[selectedWeekIndex.value]
+  const grid = gridRef.value
+  const row = weekRefs.value[selectedWeekIndex.value]
   if (!grid || !row) return
-  const rowTop = row.offsetTop, rowH = row.offsetHeight, gridH = grid.scrollHeight, overlap = 12
+  const rowTop = row.offsetTop
+  const rowH = row.offsetHeight
+  const gridH = grid.scrollHeight
+  const overlap = 12
   gridStyle.value = { '--week-shift': `${-rowTop}px` }
-  const coverFrom = rowTop + rowH - overlap, pullUp = gridH - coverFrom, marginUp = pullUp + rowTop
+  const coverFrom = rowTop + rowH - overlap
+  const pullUp = gridH - coverFrom
+  const marginUp = pullUp + rowTop
   detailsMarginTop.value = `-${marginUp}px`
 }
 function handleResize() { if (viewMode.value === 'week') adjustWeekPosition() }
@@ -324,15 +322,12 @@ function backToMonth() {
   selectedDate.value = null
 }
 
-/* 스크롤 잠금/해제 */
-function lockBodyScroll() {
-  if (typeof document !== 'undefined' && document.body) document.body.style.overflow = 'hidden'
-}
-function unlockBodyScroll() {
-  if (typeof document !== 'undefined' && document.body) document.body.style.overflow = ''
-}
+/* 스크롤 잠금/해제 (현재는 미사용) */
+function lockBodyScroll() { if (typeof document !== 'undefined' && document.body) document.body.style.overflow = 'hidden' }
+function unlockBodyScroll() { if (typeof document !== 'undefined' && document.body) document.body.style.overflow = '' }
 
-/* ===== 모달(FAB) ===== */
+/* ===== 모달(FAB) 관련 — 전부 주석 처리 ===== */
+/*
 const showModal = ref(false)
 const form = reactive<{ date: string; time: string; type: string; title: string; note: string }>({
   date: toInputDate(new Date()), time: '', type: '일정', title: '', note: ''
@@ -344,17 +339,6 @@ function openEventModal() {
   lockBodyScroll()
 }
 function closeEventModal() { showModal.value = false; unlockBodyScroll() }
-
-/* ===== 저장/로드: 로컬스토리지 버전 ===== */
-function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify(dataByDate)) } catch {} }
-function restore() {
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    if (raw) Object.assign(dataByDate, JSON.parse(raw) as DataByDate)
-  } catch {}
-}
-
-/* 저장 (로컬 전용) */
 function saveEvent() {
   if (!form.title.trim()) return
   const [yy, mm, dd] = form.date.split('-').map(Number)
@@ -369,21 +353,25 @@ function saveEvent() {
   })
   persist()
   closeEventModal()
+}
+*/
 
-  /* 🔌 백엔드 연동 지점: insert 후 실시간 반영
-     await calendarService.create({...})
-  */
+/* ===== 저장/로드: 로컬스토리지 버전 ===== */
+function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify(dataByDate)) } catch {} }
+function restore() {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    if (raw) Object.assign(dataByDate, JSON.parse(raw) as DataByDate)
+  } catch {}
 }
 
 /* 라이프사이클 */
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   restore()
-  /* 🔌 백엔드 연동 지점: load + subscribe */
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  /* 🔌 백엔드 연동 지점: unsubscribe?.() */
 })
 </script>
 
@@ -413,7 +401,8 @@ onBeforeUnmount(() => {
   border-radius:1.25rem; border:1px solid var(--lav-200);
   box-shadow:0 12px 24px rgba(0,0,0,.10);
   position:relative; /* ↞ FAB 앵커링용 */
-  z-index:10; padding-bottom:.25rem;
+  /* z-index:10;  ← 제거: 시트가 위에서 덮던 문제의 원인 */
+  padding-bottom:.25rem;
 }
 #dow-head{
   position:relative; z-index:30; background:rgba(255,255,255,.55);
@@ -422,9 +411,9 @@ onBeforeUnmount(() => {
   padding-top:.5rem; box-shadow:inset 0 -1px 0 rgba(0,0,0,.04);
 }
 .week-row{ display:grid; grid-template-columns:repeat(7,1fr); gap:.5rem 0; transition:opacity .25s ease; }
-.week-row.above{ position:relative; z-index:30; }
+.week-row.above{ position:relative; z-index:50; } /* 선택 주를 항상 위로 */
 .week-row.hidden-row{ visibility:hidden; opacity:0; pointer-events:none; }
-#calendar-grid{ overflow:hidden; transition:transform .35s ease; will-change:transform; }
+#calendar-grid{ position:relative; overflow:hidden; transition:transform .35s ease; will-change:transform; } /* 기준 부여 */
 #calendar-grid.shifted{ transform:translateY(var(--week-shift,0px)); }
 
 /* 날짜 칩 */
@@ -442,21 +431,18 @@ onBeforeUnmount(() => {
 #btn-back-fab{ position:absolute; top:10px; right:10px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:9999px; background:#fff; border:1px solid #e5e7eb; box-shadow:0 8px 18px rgba(0,0,0,.12); }
 #btn-back-fab.hidden{ display:none; }
 
-/* ✅ 카드 모서리 FAB (카드 밖으로 살짝 튀어나오게) */
+/* (주석) 카드 모서리 FAB 스타일은 남겨둠 — 기능은 비활성
 #card-add-event-fab{
-  position:absolute;
-  right:-12px;              /* 안쪽으로 붙이려면 12px */
-  bottom:-12px;             /* 안쪽으로 붙이려면 12px */
-  width:52px; height:52px;
+  position:absolute; right:-12px; bottom:-12px; width:52px; height:52px;
   display:flex; align-items:center; justify-content:center;
   border-radius:9999px; background:var(--lav-500); color:#fff;
   box-shadow:0 12px 24px rgba(139,92,246,.35);
-  cursor:pointer; z-index:40;           /* 카드 내용 위 클릭 보장 */
-  transition: transform .1s ease, filter .2s ease;
+  cursor:pointer; z-index:40; transition: transform .1s ease, filter .2s ease;
 }
 #card-add-event-fab:active{ transform: scale(.98); }
+*/
 
-/* 모달(바텀시트): 항상 맨 앞 */
+/* 모달(바텀시트): 현재 미사용
 #event-modal{ position:fixed; inset:0; display:none; z-index:5000; }
 #event-modal.show{ display:block; }
 #event-modal .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.45); }
@@ -467,6 +453,7 @@ onBeforeUnmount(() => {
   transition:transform .28s ease;
 }
 #event-modal.show .sheet{ transform:translateY(0); }
+*/
 
 /* 인풋 */
 .input{ width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:10px 12px; }
