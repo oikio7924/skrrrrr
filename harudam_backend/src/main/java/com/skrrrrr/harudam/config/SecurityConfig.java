@@ -4,8 +4,6 @@ import com.skrrrrr.harudam.jwt.JwtAuthenticationFilter;
 import com.skrrrrr.harudam.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,9 +15,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -36,27 +31,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // ★ CORS 활성화 (CorsConfig 빈과 연결)
             .cors(Customizer.withDefaults())
-            // CSRF 비활성화 (API 서버)
             .csrf(csrf -> csrf.disable())
-            // 세션 미사용
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 인가 규칙
             .authorizeHttpRequests(auth -> auth
-                // ★ preflight OPTIONS 전부 허용
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // ★ 소셜 로그인/인증 관련 공개
+                // ✅ 소셜 로그인 관련
                 .requestMatchers("/api/auth/**").permitAll()
+                // ✅ 테스트용
                 .requestMatchers("/api/test/**").permitAll()
-                .requestMatchers("/api/send-verification-code", "/api/verify-code").permitAll()
+                // ✅ 휴대폰 인증 (childId 있는 경우/없는 경우 모두 허용)
+                .requestMatchers("/api/send-verification-code",
+                                 "/api/send-verification-signup",
+                                 "/api/verify-code").permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
             )
-            // (선택) 기본 폼/베이직 끄기
             .httpBasic(b -> b.disable())
             .formLogin(f -> f.disable())
-            // JWT 필터
             .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -14,14 +14,18 @@ import com.skrrrrr.harudam.member.ChildUserRepository;
 import com.skrrrrr.harudam.member.ParentUser;
 import com.skrrrrr.harudam.member.ParentUserRepository;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class VerificationService {
 
+    /** 인증코드 길이/TTL(초) */
     private static final int CODE_LENGTH = 6;
     private static final int TTL_SECONDS = 180; // 3분
+
     private static final SecureRandom RNG = new SecureRandom();
 
     private final AuthCodeRepository authCodeRepository;
@@ -30,39 +34,82 @@ public class VerificationService {
     private final SmsSender smsSender;
     private final SmsProperties smsProperties;
 
+    /** 프론트에 만료정보를 내려주기 위한 반환 DTO */
+    @Getter
+    @AllArgsConstructor
+    public static class SendCodeResult {
+        private final ZonedDateTime expiresAt; // 서버 기준 만료 시각
+        private final int ttlSeconds;          // 남은 TTL(초)
+    }
+
+    /** 기존: childId + phone 필요 (만료정보 반환) */
     @Transactional
-    public void sendCode(Long childId, String parentPhone) {
-        // 1) 자녀 확인
+    public SendCodeResult sendCode(Long childId, String parentPhone) {
         ChildUser child = childUserRepository.findById(childId)
                 .orElseThrow(() -> new IllegalArgumentException("자녀를 찾을 수 없습니다. id=" + childId));
 
-        // 2) 전화번호 정규화
-        String digits = normalizeDigits(parentPhone);     // 01012345678
-        String toE164 = toE164Kr(digits);                 // +821012345678
+        String digits = normalizeDigits(parentPhone);
+        String toE164 = toE164Kr(digits);
 
-        // 3) 이전 미사용 코드 만료
+        // 이전 미사용 코드 만료 처리
         authCodeRepository.findTopByTargetParentPhoneAndStatusOrderByCreatedAtDesc(digits, AuthCodeStatus.ISSUED)
                 .ifPresent(c -> c.setStatus(AuthCodeStatus.EXPIRED));
 
-        // 4) 새 코드 생성 + 저장
+        // 새 코드 생성/저장
         String code = generate();
         ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime expiresAt = now.plusSeconds(TTL_SECONDS);
 
         AuthCode ac = new AuthCode();
         ac.setCodeValue(code);
         ac.setIssuedByChild(child);
-        ac.setTargetParentPhone(digits); // DB에는 숫자만
+        ac.setTargetParentPhone(digits);
         ac.setStatus(AuthCodeStatus.ISSUED);
-        ac.setExpiresAt(now.plusSeconds(TTL_SECONDS));
+        ac.setExpiresAt(expiresAt);
         authCodeRepository.save(ac);
 
-        // 5) 문자 발송 (템플릿 치환)
+        // 문자 발송
         String msg = smsProperties.getTemplate()
                 .replace("{code}", code)
                 .replace("{ttlMinutes}", String.valueOf(TTL_SECONDS / 60));
         smsSender.send(toE164, msg);
+
+        return new SendCodeResult(expiresAt, TTL_SECONDS);
     }
 
+    /** ✅ 신규: childId 없이 phone만으로 코드 발송 (만료정보 반환) */
+    @Transactional
+    public SendCodeResult sendCodeWithoutChild(String parentPhone) {
+        String digits = normalizeDigits(parentPhone);
+        String toE164 = toE164Kr(digits);
+
+        // 이전 미사용 코드 만료 처리
+        authCodeRepository.findTopByTargetParentPhoneAndStatusOrderByCreatedAtDesc(digits, AuthCodeStatus.ISSUED)
+                .ifPresent(c -> c.setStatus(AuthCodeStatus.EXPIRED));
+
+        // 새 코드 생성/저장
+        String code = generate();
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime expiresAt = now.plusSeconds(TTL_SECONDS);
+
+        AuthCode ac = new AuthCode();
+        ac.setCodeValue(code);
+        ac.setIssuedByChild(null); // child 없이 발급
+        ac.setTargetParentPhone(digits);
+        ac.setStatus(AuthCodeStatus.ISSUED);
+        ac.setExpiresAt(expiresAt);
+        authCodeRepository.save(ac);
+
+        // 문자 발송
+        String msg = smsProperties.getTemplate()
+                .replace("{code}", code)
+                .replace("{ttlMinutes}", String.valueOf(TTL_SECONDS / 60));
+        smsSender.send(toE164, msg);
+
+        return new SendCodeResult(expiresAt, TTL_SECONDS);
+    }
+
+    /** 입력한 인증코드 검증 */
     @Transactional
     public boolean verifyCode(String parentPhone, String code) {
         String digits = normalizeDigits(parentPhone);
@@ -97,6 +144,8 @@ public class VerificationService {
         return true;
     }
 
+    /* ===================== 유틸 ===================== */
+
     private static String generate() {
         StringBuilder sb = new StringBuilder(CODE_LENGTH);
         for (int i = 0; i < CODE_LENGTH; i++) {
@@ -115,11 +164,9 @@ public class VerificationService {
         if (digits.startsWith("0")) {
             return "+82" + digits.substring(1);
         }
-        // 이미 국가코드가 붙은 경우 등 edge 처리
         if (digits.startsWith("82")) {
             return "+" + digits;
         }
-        // 그 외는 그대로 국가코드 붙이기(한국 가정)
         return "+82" + digits;
     }
 }
