@@ -108,7 +108,9 @@
           하루담 시작하기
         </button>
       </form>
-    </div> </div> <div v-if="showConsentModal" class="modal-overlay" @click.self="closeConsentModal">
+    </div>
+  </div>
+  <div v-if="showConsentModal" class="modal-overlay" @click.self="closeConsentModal">
     <div class="modal-card">
       <h3 class="modal-title">부모님 개인정보 이용 동의</h3>
       <div class="modal-content">
@@ -135,13 +137,18 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 import { reactive, computed, ref, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { useRouter, useRoute } from 'vue-router' // ✅ useRoute 추가
+import { sendVerificationCode, verifyCode } from '@/api/verification'
 
 const router = useRouter()
+const route = useRoute()
+
+const childIdForVerification = computed(() =>
+  Number(route.params.childId || localStorage.getItem('childId') || 0)
+)
+
 const showConsentModal = ref(false)
 
 /* 사진 관련 */
@@ -175,9 +182,6 @@ const verificationStatus = reactive<{ message: string; type: 'success' | 'invali
   type: '',
 })
 
-// ▼▼▼ Twilio 인증을 위해 새로 추가된 상태 ▼▼▼
-const sentOtpCode = ref<string | null>(null);
-
 
 /* 유효성 체크 */
 const phoneRegex = /^01[016789]-\d{3,4}-\d{4}$/
@@ -188,7 +192,7 @@ const valid = reactive({
   get birth() { return !!form.birth },
   get gender() { return form.gender === 'F' || form.gender === 'M' },
 })
-// '하루담 시작하기' 버튼 활성화를 위해 codeVerified도 체크
+// 제출 버튼 활성화는 인증 완료까지 요구
 const formValid = computed(() =>
   valid.name && valid.phone && valid.birth && valid.gender && codeVerified.value
 )
@@ -202,60 +206,81 @@ function closeConsentModal() { showConsentModal.value = false }
 function onConsentAgree() { closeConsentModal(); sendSMS() } // 👈 함수명 변경
 function onDetailsClick() { alert('[안내] 개인정보처리방침 페이지로 이동합니다. (구현 필요)') }
 
+// ✅ 카운트다운 함수 누락 보완
+function startCountdown(sec: number) {
+  countdown.value = sec
+  if (timer) window.clearInterval(timer)
+  timer = window.setInterval(() => {
+    countdown.value -= 1
+    if (countdown.value <= 0 && timer) {
+      window.clearInterval(timer)
+      timer = null
+    }
+  }, 1000)
+}
 
-// ▼▼▼ '인증번호 전송' 함수를 Twilio 연동 로직으로 교체 ▼▼▼
+// ▼ 인증번호 전송
 async function sendSMS() {
   if (!valid.phone || countdown.value > 0) return
+  if (!childIdForVerification.value) {
+    alert('자녀 ID가 없습니다. 이전 단계에서 자녀 생성/선택을 먼저 해주세요.')
+    return
+  }
   sending.value = true
   verificationStatus.message = '인증번호를 전송 중입니다...'
   verificationStatus.type = ''
-
   try {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    sentOtpCode.value = otp
-
-    const fullPhoneNumber = '+82' + form.phone.replace(/-/g, '').substring(1);
-
-    await axios.post('http://localhost:8080/send-sms', {
-      to: fullPhoneNumber,
-      body: `[하루담] 부모님 동의 인증번호는 [${otp}] 입니다.`
+    const digits = form.phone.replace(/\D/g, '')
+    const res = await sendVerificationCode({
+      childId: childIdForVerification.value, // <- .value 사용
+      phone: digits,
     })
-
-    verificationStatus.message = '인증번호를 전송했습니다. 3분 이내에 입력해주세요.'
-    verificationStatus.type = 'success'
-    codeSent.value = true
-    startCountdown(180)
-
-  } catch (error) {
+    if (res.success) {
+      verificationStatus.message = res.message || '인증번호를 전송했습니다. 3분 이내에 입력해주세요.'
+      verificationStatus.type = 'success'
+      codeSent.value = true
+      startCountdown(180)
+    } else {
+      verificationStatus.message = res.message || '전송 실패'
+      verificationStatus.type = 'invalid'
+    }
+  } catch (error: any) {
     console.error('인증번호 전송 오류:', error)
-    verificationStatus.message = '인증번호 전송 중 오류가 발생했습니다.'
+    verificationStatus.message = error?.response?.data?.message || '인증번호 전송 중 오류가 발생했습니다.'
     verificationStatus.type = 'invalid'
   } finally {
     sending.value = false
   }
 }
 
-// ▼▼▼ '인증번호 확인' 함수를 프론트엔드 확인 로직으로 교체 ▼▼▼
+// ▼ 인증번호 확인
 async function verifySMS() {
   if (!valid.code) { touched.code = true; return }
   verifyingCode.value = true
   verificationStatus.message = ''
-
-  await new Promise(r => setTimeout(r, 300)); // (가짜 로딩 효과)
-
-  if (form.code === sentOtpCode.value) {
-    codeVerified.value = true
-    verificationStatus.message = '인증되었습니다.'
-    verificationStatus.type = 'success'
-    if (timer) clearInterval(timer)
-    countdown.value = 0
-  } else {
+  try {
+    const digits = form.phone.replace(/\D/g, '')
+    const res = await verifyCode({ phone: digits, code: form.code })
+    if (res.success) {
+      codeVerified.value = true
+      verificationStatus.message = res.message || '인증되었습니다.'
+      verificationStatus.type = 'success'
+      if (timer) clearInterval(timer)
+      countdown.value = 0
+    } else {
+      codeVerified.value = false
+      verificationStatus.message = res.message || '인증번호가 올바르지 않습니다.'
+      verificationStatus.type = 'invalid'
+    }
+  } catch (e: any) {
     codeVerified.value = false
-    verificationStatus.message = '인증번호가 올바르지 않습니다.'
+    verificationStatus.message = e?.response?.data?.message || '인증 처리 중 오류가 발생했습니다.'
     verificationStatus.type = 'invalid'
+  } finally {
+    verifyingCode.value = false
   }
-  verifyingCode.value = false
 }
+
 
 /* 주소 검색 */
 interface DaumPostcodeData { userSelectedType: 'R' | 'J'; roadAddress: string; jibunAddress: string }
@@ -263,12 +288,26 @@ type DaumNS = { Postcode: new (opts: { oncomplete: (data: DaumPostcodeData) => v
 type WindowWithDaum = Window & { daum?: DaumNS }
 const getDaum = (): DaumNS | undefined => (window as WindowWithDaum).daum
 
-function execDaumPostcode() { const daum = getDaum(); if (!daum) return; new daum.Postcode({ oncomplete: (data) => { form.addr1 = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress }, }).open() }
-function openAddressSearch() { const daum = getDaum(); if (daum?.Postcode) { execDaumPostcode(); return } const script = document.createElement('script'); script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'; script.onload = () => execDaumPostcode(); document.head.appendChild(script) }
+function execDaumPostcode() {
+  const daum = getDaum(); if (!daum) return
+  new daum.Postcode({
+    oncomplete: (data) => {
+      form.addr1 = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress
+    },
+  }).open()
+}
+function openAddressSearch() {
+  const daum = getDaum()
+  if (daum?.Postcode) { execDaumPostcode(); return }
+  const script = document.createElement('script')
+  script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'
+  script.onload = () => execDaumPostcode()
+  document.head.appendChild(script)
+}
 
-/* 핸드폰 번호 마스킹 */
+/* 핸드폰 번호 마스킹 (+ 번호 바꾸면 인증상태 리셋 권장) */
 function maskPhone(e: Event) {
-  const input = e.target as HTMLInputElement
+  const input = (e.target as HTMLInputElement)
   let digits = input.value.replace(/\D/g, '')
   if (digits.length > 11) digits = digits.slice(0, 11)
   let masked = ''
@@ -279,37 +318,57 @@ function maskPhone(e: Event) {
     masked = `${digits.slice(0, 3)}-${digits.slice(3)}`
   } else masked = digits
   form.phone = masked
+
+  // 번호 변경 시 인증 초기화(권장)
+  codeSent.value = false
+  codeVerified.value = false
+  verificationStatus.message = ''
 }
 
 /* 사진 업로드 */
 function triggerFileInput() { fileInputRef.value?.click() }
-function onFileChange(e: Event) { const input = e.target as HTMLInputElement; const file = input.files?.[0]; if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value); if (file) { form.photo = file; photoPreviewUrl.value = URL.createObjectURL(file) } else { form.photo = null; photoPreviewUrl.value = null } }
-function removePhoto() { if (photoPreviewUrl.value) { URL.revokeObjectURL(photoPreviewUrl.value) }; photoPreviewUrl.value = null; form.photo = null; if (fileInputRef.value) { fileInputRef.value.value = '' } }
+function onFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value)
+  if (file) {
+    form.photo = file
+    photoPreviewUrl.value = URL.createObjectURL(file)
+  } else {
+    form.photo = null
+    photoPreviewUrl.value = null
+  }
+}
+function removePhoto() {
+  if (photoPreviewUrl.value) { URL.revokeObjectURL(photoPreviewUrl.value) }
+  photoPreviewUrl.value = null
+  form.photo = null
+  if (fileInputRef.value) fileInputRef.value.value = ''
+}
 
-/* 카운트다운 */
-function startCountdown(sec: number) { countdown.value = sec; if (timer) window.clearInterval(timer); timer = window.setInterval(() => { countdown.value -= 1; if (countdown.value <= 0 && timer) { window.clearInterval(timer); timer = null } }, 1000) }
+
 
 // 최종 제출
 async function onSubmit() {
-  // ... (폼 유효성 검사 등) ...
   submitting.value = true
   try {
     // TODO: 실제 회원가입 API 호출
     await new Promise<void>(r => setTimeout(r, 600))
     alert('회원가입이 완료되었습니다.')
-
-    // ▼▼▼ 바로 이 부분이 페이지를 이동시키는 코드입니다! ▼▼▼
     router.push({ name: 'main_child' })
-
-  } catch (e) {
-    // ...
   } finally {
     submitting.value = false
   }
 }
+
+
 /* 언마운트 시 정리 */
-onUnmounted(() => { if (timer) window.clearInterval(timer); if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value) })
+onUnmounted(() => {
+  if (timer) window.clearInterval(timer)
+  if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value)
+})
 </script>
+
 
 <style scoped>
 /* 스타일 코드는 제공해주신 그대로 유지됩니다. */

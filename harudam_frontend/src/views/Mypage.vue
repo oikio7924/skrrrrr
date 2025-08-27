@@ -1,5 +1,31 @@
 <template>
   <div class="mypage">
+    <!-- ✅ 헤더 -->
+    <header class="mypage-header">
+      <!-- 로고+텍스트 전체를 클릭 가능하게 -->
+      <div class="logo" @click="goHome">
+        <img src="@/assets/harudam_logo.png" alt="하루담 로고" />
+        <span class="logo-text">하루담</span>
+      </div>
+
+      <!-- 설정 버튼 -->
+      <button class="settings-btn" @click="goSettings" aria-label="설정">
+        <svg class="settings-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+          stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.52-.878 3.348.95
+               2.47 2.47a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924
+               0 3.35a1.724 1.724 0 00-1.066 2.573c.878 1.52-.95
+               3.348-2.47 2.47a1.724 1.724 0 00-2.573 1.066c-.426
+               1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.52.878-3.348-.95-2.47-2.47a1.724
+               1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924
+               0-3.35a1.724 1.724 0 001.066-2.573c-.878-1.52.95-3.348
+               2.47-2.47.996.575 2.229.146 2.573-1.066z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+    </header>
+
+
     <!-- 상단 프로필 -->
     <div class="profile-section">
       <div class="profile-photo">사진</div>
@@ -49,11 +75,19 @@
 
 <script setup lang="ts">
 import { ref } from "vue"
+import { useRouter } from "vue-router"
 import FooterNav from "@/components/FooterNav.vue"
 
-const user = ref({
-  name: "이하나",
-})
+const router = useRouter()
+const user = ref({ name: "이하나" })
+
+function goSettings() {
+  router.push("/setting")
+}
+
+function goHome() {
+  router.push("/main_child") // ✅ 메인 페이지로 이동
+}
 </script>
 
 <style scoped>
@@ -61,24 +95,84 @@ const user = ref({
   width: 100%;
   background: #f9f9fb;
   min-height: 100vh;
+  padding-top: 70px;   /* 헤더 높이만큼 패딩 추가 */
   padding-bottom: 5rem;
   font-family: "Inter", sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-y: auto;   /* ✅ 본문만 스크롤 */
 }
 
-/* 프로필 */
+/* ✅ 헤더 */
+.mypage-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;              /* ✅ 공통 헤더 크기 */
+  background: #fff;
+  border-bottom-left-radius: 12px; /* ✅ 라운드 처리 */
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* ✅ 부드러운 그림자 */
+  position: fixed;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* ✅ 글씨랑 로고 사이 여백 확대 */
+}
+
+/* ✅ 헤더 스타일 */
+.logo img {
+  width: 42px;
+  height: 42px;
+}
+
+.logo-text {
+  font-family: "Dongle", sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #9a7dff;
+  /* ✅ 조금 더 부드러운 연보라 */
+  line-height: 1;
+  transform: translateY(6px);
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.settings-icon {
+  width: 34px;
+  height: 34px;
+  color: #9a7dff;
+  /* ✅ 로고색과 톤 맞춤 */
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.settings-btn:hover .settings-icon {
+  transform: rotate(30deg);
+  color: #6d28d9;
+}
+
+/* 이하 기존 스타일 동일 */
 .profile-section {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-top: 2rem;
-  margin-bottom: 1rem;   /* ✅ 기존보다 간격 줄이기 */
+  margin-bottom: 1rem;
 }
 
 .profile-photo {
-  width: 120px;          /* ✅ 기존 100px → 확대 */
+  width: 120px;
   height: 120px;
   border-radius: 50%;
   background: #d9d6ff;
@@ -87,15 +181,17 @@ const user = ref({
   justify-content: center;
   font-weight: bold;
   margin-bottom: 0.75rem;
-  font-size: 1rem;        /* ✅ 글자 크기도 살짝 키움 */
-  border: 4px solid #c4b5fd; /* ✅ 테두리 강조 */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* ✅ 입체감 */
+  font-size: 1rem;
+  border: 4px solid #c4b5fd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
 .profile-name {
   font-size: 1.2rem;
   font-weight: 700;
   margin-bottom: 0.25rem;
 }
+
 .edit-btn {
   background: #ede9fe;
   color: #6d28d9;
@@ -107,18 +203,18 @@ const user = ref({
   cursor: pointer;
 }
 
-/* 메뉴바 */
 .menu-bar {
   display: flex;
   justify-content: space-between;
   background: linear-gradient(135deg, #e0d7ff, #c4b5fd);
   border-radius: 16px;
-  margin: 0.5rem auto 1.5rem; /* ✅ 위쪽 여백 줄이고 아래는 유지 */
+  margin: 0.5rem auto 1.5rem;
   padding: 14px;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
+
 .menu-item {
   flex: 1;
   text-align: center;
@@ -134,35 +230,39 @@ const user = ref({
   transition: all 0.25s ease;
   cursor: pointer;
 }
+
 .menu-item:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
 .icon {
-  font-size: 1.6rem; /* ✅ 이모지 크게 */
+  font-size: 1.6rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); /* ✅ 대비 강화 */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
 }
 
-/* 카드 */
 .info-card {
   width: 90%;
   max-width: 500px;
   margin: 0.8rem auto;
   padding: 1rem;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   background: #fff;
 }
+
 .section-title {
   margin-bottom: 0.6rem;
   color: #6d28d9;
   font-weight: bold;
 }
+
 .info-card ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
+
 .info-item {
   padding: 10px 0;
   font-size: 0.95rem;
@@ -170,9 +270,11 @@ const user = ref({
   cursor: pointer;
   transition: color 0.2s;
 }
+
 .info-item:last-child {
   border-bottom: none;
 }
+
 .info-item:hover {
   color: #6d28d9;
 }

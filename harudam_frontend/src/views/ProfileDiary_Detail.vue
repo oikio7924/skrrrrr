@@ -1,4 +1,16 @@
 <template>
+  <!-- ✅ 타임라인 헤더 -->
+  <header class="timeline-header">
+    <button class="back-btn" @click="goBack" aria-label="뒤로가기">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+           stroke-width="2" stroke="currentColor" class="icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    <h1 class="title">타임라인</h1>
+  </header>
+
+  <!-- ✅ 타임라인 리스트 -->
   <div class="timeline">
     <div
       v-for="(diary, idx) in diaries"
@@ -12,20 +24,23 @@
 
       <!-- 텍스트 -->
       <div class="content-box">
-        <h2 class="title">{{ diary.title }}</h2>
+        <h2 class="content-title">{{ diary.title }}</h2>
         <p class="date">{{ diary.date }}</p>
         <p class="text">{{ diary.content }}</p>
       </div>
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- ✅ Footer -->
   <FooterNav />
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue"
+import { useRouter } from "vue-router"
 import FooterNav from "@/components/FooterNav.vue"
+
+const router = useRouter()
 
 const diaries = ref(
   Array.from({ length: 12 }, (_, i) => {
@@ -39,9 +54,52 @@ const diaries = ref(
     }
   })
 )
+
+function goBack() {
+  router.back()
+}
 </script>
 
 <style scoped>
+/* ✅ 타임라인 헤더 */
+.timeline-header {
+  position: sticky;              /* 스크롤 내려도 상단 고정 */
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;       /* 중앙에 타이틀 */
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.back-btn {
+  position: absolute;            /* 중앙 타이틀 영향 X */
+  left: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.back-btn .icon {
+  width: 28px;
+  height: 28px;
+  stroke: #6d28d9;   /* 보라색 아이콘 */
+}
+
+.timeline-header .title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+/* ✅ 타임라인 본문 */
 .timeline {
   height: 100vh;
   overflow-y: scroll;
@@ -54,12 +112,12 @@ const diaries = ref(
 /* 카드 하나 */
 .timeline-item {
   scroll-snap-align: center;
-  width: 95%;                /* ✅ 모바일에서 거의 꽉 차게 */
-  max-width: 700px;          /* ✅ PC에서도 크게 보이도록 */
+  width: 95%;
+  max-width: 700px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  margin: 1rem auto;         /* ✅ 카드 사이 여백 줄임 */
+  margin: 1rem auto;
 
   display: flex;
   flex-direction: column;
@@ -68,9 +126,9 @@ const diaries = ref(
 
 /* 이미지 영역 */
 .image-box {
-  margin: 0 0 1rem 0;        /* ✅ 위쪽 여백 제거, 아래만 간격 */
+  margin: 0 0 1rem 0;
   width: 100%;
-  height: 250px;             /* ✅ 모바일에서 보기 좋은 높이 */
+  height: 250px;
   display: flex;
   justify-content: center;
   overflow: hidden;
@@ -78,8 +136,8 @@ const diaries = ref(
 }
 
 .image-box img {
-  width: 95%;                /* ✅ 이미지 좌우 여백 조금만 */
-  height: 100%;
+  width: 95%;
+  height: 90%;
   object-fit: cover;
   border-radius: 12px;
 }
@@ -88,7 +146,7 @@ const diaries = ref(
 .content-box {
   padding: 0.8rem 1.2rem 1.2rem;
 }
-.title {
+.content-title {
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0.3rem 0;
@@ -109,10 +167,10 @@ const diaries = ref(
 /* ✅ 반응형 - PC 화면 */
 @media (min-width: 1024px) {
   .timeline-item {
-    max-width: 900px;   /* ✅ 더 크게 */
+    max-width: 900px;
   }
   .image-box {
-    height: 300px;      /* ✅ 이미지도 조금 더 크게 */
+    height: 300px;
   }
 }
 </style>
