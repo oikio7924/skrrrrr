@@ -11,7 +11,7 @@ import FooterNav from '@/components/FooterNav.vue'
 import Calendar_Child from '@/views/Calendar_Child.vue'
 import ProfileDiary from '@/views/ProfileDiary.vue'
 
-import Footer from '@/views/Footer.vue'
+// import Footer from '@/views/Footer.vue'
 import Onboarding from '@/views/Onboarding.vue'
 import Start from '@/views/Start.vue'
 import Signupdetail_Child from '@/views/Signupdetail_Child.vue'
@@ -42,11 +42,11 @@ const router = createRouter({
       name: 'signup',
       component: () => Signup,
     },
-    {
-      path: '/CalendarChild',
-      name: 'CalendarChild',
-      component: () => import('@/views/Calendar_Child.vue'),
-    },
+    // {
+    //   path: '/CalendarChild',
+    //   name: 'CalendarChild',
+    //   component: () => import('@/views/Calendar_Child.vue'),
+    // },
     {
       path: '/start',
       name: 'Start',
@@ -125,9 +125,14 @@ const router = createRouter({
     {
       path : '/header',
       name : 'header',
-      component : () => import('@/views/Header.vue')
+      component : () => import('@/components/Header.vue')
+    },
+    {
+      path : '/memoir',
+      name : 'memoir',
+      component : () => import('@/views/Memoir.vue'),
+      meta: { showFooter: true }
     }
-
   ],
 
 
