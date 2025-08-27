@@ -33,5 +33,4 @@ build/
 .vscode/
 
 ### 추가 ###
-application.properties
-.metadata/
+application-local.properties
