@@ -2,6 +2,7 @@ package com.skrrrrr.harudam.verification;
 
 import java.security.SecureRandom;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -189,6 +190,24 @@ public class VerificationService {
         return ResponseEntity.ok("부모 회원가입 완료");
     }
 
+    /* ===================== 부모 로그인 검증 ===================== */
+    @Transactional
+    public Optional<ParentUser> verifyAndGetParent(String authCode) {
+        AuthCode target = authCodeRepository.findAll().stream()
+                .filter(c -> c.getCodeValue().equals(authCode) && c.getStatus() == AuthCodeStatus.ISSUED)
+                .findFirst()
+                .orElse(null);
+
+        if (target == null || ZonedDateTime.now().isAfter(target.getExpiresAt())) {
+            return Optional.empty();
+        }
+
+        target.setStatus(AuthCodeStatus.USED);
+        target.setUsedAt(ZonedDateTime.now());
+
+        return parentUserRepository.findByPhone(target.getTargetParentPhone());
+    }
+    
     /* ===================== 유틸 ===================== */
     private static String generate() {
         StringBuilder sb = new StringBuilder(CODE_LENGTH);

@@ -1,5 +1,6 @@
 package com.skrrrrr.harudam.signup;
 
+import com.skrrrrr.harudam.common.dto.ApiResponse;
 import com.skrrrrr.harudam.member.ChildUser;
 import com.skrrrrr.harudam.member.ChildUserRepository;
 import com.skrrrrr.harudam.member.ParentChildLink;
@@ -7,7 +8,6 @@ import com.skrrrrr.harudam.member.ParentChildLinkRepository;
 import com.skrrrrr.harudam.member.ParentUser;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,14 +17,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-/**
- * 회원가입 완료 화면에서 표시할 정보 제공용 컨트롤러
- * - 요구값: JWT 인증(Child 기준) 필요
- * - 응답: 부모 이름(parentName), 부모 코드(parentCode)
- *
- * 프론트의 Signup_Complete.vue가 호출하는 엔드포인트:
- *   GET /api/v1/signup-complete-info
- */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -35,12 +27,9 @@ public class SignupCompleteController {
     private final ChildUserRepository childUserRepository;
 
     // ===== DTO =====
-
     @Getter
     @AllArgsConstructor
     public static class CompleteInfoResponse {
-        private boolean success;
-        private String message;
         private String parentName;  // 화면 노출용
         private String parentCode;  // 화면 노출/복사용
     }
@@ -52,37 +41,34 @@ public class SignupCompleteController {
      * - 현재 로그인한 Child(JWT subject)의 첫 번째 연결 Parent 정보를 반환
      */
     @GetMapping("/signup-complete-info")
-    public ResponseEntity<CompleteInfoResponse> getSignupCompleteInfo() {
+    public ResponseEntity<ApiResponse<CompleteInfoResponse>> getSignupCompleteInfo() {
         Long childId = getCurrentChildId();
         if (childId == null) {
-            return ResponseEntity.status(401)
-                    .body(new CompleteInfoResponse(false, "인증 정보가 없습니다.", null, null));
+            return ResponseEntity.status(401).body(ApiResponse.fail("UNAUTHORIZED"));
         }
 
         // 자녀 존재 여부 확인
         Optional<ChildUser> childOpt = childUserRepository.findById(childId);
         if (childOpt.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(new CompleteInfoResponse(false, "자녀 정보를 찾을 수 없습니다.", null, null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("CHILD_NOT_FOUND"));
         }
 
-        // 부모-자녀 링크 중 첫 번째 항목 사용 (여러 명일 수 있으므로)
+        // 부모-자녀 링크 중 첫 번째 항목 사용
         Optional<ParentChildLink> linkOpt = parentChildLinkRepository.findAll().stream()
                 .filter(l -> l.getChildUser() != null && childId.equals(l.getChildUser().getId()))
                 .findFirst();
 
         if (linkOpt.isEmpty() || linkOpt.get().getParentUser() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new CompleteInfoResponse(false, "연결된 보호자 정보를 찾을 수 없습니다.", null, null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("PARENT_NOT_FOUND"));
         }
 
         ParentUser parent = linkOpt.get().getParentUser();
         String parentName = safe(parent.getName(), "보호자");
         String parentCode = buildParentCode(linkOpt.get(), parent);
 
-        return ResponseEntity.ok(
-                new CompleteInfoResponse(true, "OK", parentName, parentCode)
-        );
+        CompleteInfoResponse response = new CompleteInfoResponse(parentName, parentCode);
+
+        return ResponseEntity.ok(ApiResponse.ok("COMPLETE_INFO_SUCCESS", response));
     }
 
     // ===== Helpers =====

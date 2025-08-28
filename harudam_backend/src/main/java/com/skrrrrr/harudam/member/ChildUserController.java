@@ -1,12 +1,13 @@
 package com.skrrrrr.harudam.member;
 
+import com.skrrrrr.harudam.common.dto.ApiResponse;
 import com.skrrrrr.harudam.common.enums.Gender;
 import com.skrrrrr.harudam.common.enums.UserState;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 public class ChildUserController {
 
     private final ChildUserRepository childUserRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // ---------------- DTO ----------------
 
@@ -39,30 +41,32 @@ public class ChildUserController {
         private String voiceUrl;   // 원본 음성 URL
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class ChildSignupResponse {
-        private boolean success;
-        private String message;
-        private Long childId;
-    }
-
     // ---------------- API ----------------
 
     /**
      * ✅ 자녀 회원가입 API
      */
     @PostMapping("/signup")
-    public ResponseEntity<ChildSignupResponse> signup(@RequestBody ChildSignupRequest req) {
+    public ResponseEntity<ApiResponse<Long>> signup(@RequestBody ChildSignupRequest req) {
         if (req.getUserId() == null || req.getName() == null || req.getGender() == null
                 || req.getBirth() == null || req.getPhone() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ChildSignupResponse(false, "필수값 누락", null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("INVALID_REQUEST"));
         }
 
+        // ---------------- 중복 검증 ----------------
+        if (childUserRepository.findByUserId(req.getUserId()).isPresent()) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail("DUPLICATE_USERID"));
+        }
+        if (childUserRepository.findByPhone(req.getPhone()).isPresent()) {
+            return ResponseEntity.badRequest().body(ApiResponse.fail("DUPLICATE_PHONE"));
+        }
+
+        // ---------------- 신규 저장 ----------------
         ChildUser child = new ChildUser();
         child.setUserId(req.getUserId());
-        child.setPassword(req.getPassword());
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            child.setPassword(passwordEncoder.encode(req.getPassword())); // 암호화 저장
+        }
         child.setName(req.getName());
         child.setGender(Gender.valueOf(req.getGender().toUpperCase()));
         child.setBirth(LocalDate.parse(req.getBirth()));
@@ -75,8 +79,6 @@ public class ChildUserController {
 
         ChildUser saved = childUserRepository.save(child);
 
-        return ResponseEntity.ok(
-                new ChildSignupResponse(true, "자녀 회원가입 완료", saved.getId())
-        );
+        return ResponseEntity.ok(ApiResponse.ok("SIGNUP_SUCCESS", saved.getId()));
     }
 }

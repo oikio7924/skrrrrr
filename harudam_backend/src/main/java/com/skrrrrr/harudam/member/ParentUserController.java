@@ -1,8 +1,8 @@
 package com.skrrrrr.harudam.member;
 
+import com.skrrrrr.harudam.common.dto.ApiResponse;
 import com.skrrrrr.harudam.common.enums.Gender;
 import com.skrrrrr.harudam.common.enums.UserState;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -39,30 +39,19 @@ public class ParentUserController {
         private Long childId;      // 연결할 자녀 ID
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class ParentSignupResponse {
-        private boolean success;
-        private String message;
-        private Long parentId;
-        private Long childId;
-        private Long linkId;
-    }
-
     // ---------------- API ----------------
 
     /**
      * ✅ 부모 회원가입 + 자녀와 자동 연결
      */
     @PostMapping("/signup")
-    public ResponseEntity<ParentSignupResponse> signup(@RequestBody ParentSignupRequest req) {
+    public ResponseEntity<ApiResponse<Long>> signup(@RequestBody ParentSignupRequest req) {
         if (req.getName() == null || req.getName().isBlank()
                 || req.getGender() == null || req.getGender().isBlank()
                 || req.getBirth() == null || req.getBirth().isBlank()
                 || req.getPhone() == null || req.getPhone().isBlank()
                 || req.getChildId() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ParentSignupResponse(false, "필수값 누락", null, null, null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("INVALID_REQUEST"));
         }
 
         // 휴대폰 번호 기준으로 부모 조회 (이미 있으면 업데이트, 없으면 새로 생성)
@@ -83,8 +72,7 @@ public class ParentUserController {
         // 자녀 조회
         ChildUser child = childUserRepository.findById(req.getChildId()).orElse(null);
         if (child == null) {
-            return ResponseEntity.badRequest()
-                    .body(new ParentSignupResponse(false, "자녀를 찾을 수 없습니다.", savedParent.getId(), null, null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("CHILD_NOT_FOUND"));
         }
 
         // 부모-자녀 관계 자동 생성 (중복 체크 포함)
@@ -97,9 +85,6 @@ public class ParentUserController {
                     return parentChildLinkRepository.save(newLink);
                 });
 
-        return ResponseEntity.ok(
-                new ParentSignupResponse(true, "부모 정보 및 관계가 저장되었습니다.",
-                        savedParent.getId(), child.getId(), link.getLinkId())
-        );
+        return ResponseEntity.ok(ApiResponse.ok("SIGNUP_SUCCESS", savedParent.getId()));
     }
 }
