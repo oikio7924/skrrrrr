@@ -1,6 +1,7 @@
 package com.skrrrrr.harudam.member;
 
 import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,24 +24,21 @@ public class ParentUserController {
     private final ChildUserRepository childUserRepository;
     private final ParentChildLinkRepository parentChildLinkRepository;
 
-    /**
-     * 부모 회원가입/업데이트 요청 DTO
-     */
+    // ---------------- DTO ----------------
+
     @Getter
     @NoArgsConstructor
     public static class ParentSignupRequest {
-        private String name;
-        private String gender;   // "M" 또는 "F"
-        private String birth;    // yyyy-MM-dd
-        private String phone;    // 인증된 번호
-        private String address;
-        private String picture;  // 사진 URL (옵션)
-        private Long childId;    // ✅ 추가: 어떤 자녀와 연결할지
+        private String name;       // 부모 성함
+        private String gender;     // "MALE"/"FEMALE"
+        private String birth;      // yyyy-MM-dd
+        private String phone;      // 인증된 휴대폰 번호
+        private String addr1;      // 기본 주소
+        private String addr2;      // 상세 주소
+        private String pictureUrl; // 부모 사진 (파일 업로드 후 URL)
+        private Long childId;      // 연결할 자녀 ID
     }
 
-    /**
-     * 부모 회원가입/업데이트 응답 DTO
-     */
     @Getter
     @AllArgsConstructor
     public static class ParentSignupResponse {
@@ -51,12 +49,13 @@ public class ParentUserController {
         private Long linkId;
     }
 
+    // ---------------- API ----------------
+
     /**
-     * ✅ 부모 정보 저장/업데이트 + 자녀와 자동 연결
+     * ✅ 부모 회원가입 + 자녀와 자동 연결
      */
     @PostMapping("/signup")
     public ResponseEntity<ParentSignupResponse> signup(@RequestBody ParentSignupRequest req) {
-        // 유효성 검사
         if (req.getName() == null || req.getName().isBlank()
                 || req.getGender() == null || req.getGender().isBlank()
                 || req.getBirth() == null || req.getBirth().isBlank()
@@ -66,7 +65,7 @@ public class ParentUserController {
                     .body(new ParentSignupResponse(false, "필수값 누락", null, null, null));
         }
 
-        // phone 기준 부모 찾기 (있으면 업데이트, 없으면 생성)
+        // 휴대폰 번호 기준으로 부모 조회 (이미 있으면 업데이트, 없으면 새로 생성)
         ParentUser parent = parentUserRepository.findByPhone(req.getPhone())
                 .orElseGet(ParentUser::new);
 
@@ -74,14 +73,15 @@ public class ParentUserController {
         parent.setGender(Gender.valueOf(req.getGender().toUpperCase()));
         parent.setBirth(LocalDate.parse(req.getBirth()));
         parent.setPhone(req.getPhone());
-        parent.setAddress(req.getAddress());
-        parent.setPicture(req.getPicture());
+        parent.setAddr1(req.getAddr1());
+        parent.setAddr2(req.getAddr2());
+        parent.setPictureUrl(req.getPictureUrl());
+        parent.setState(UserState.PENDING);
 
         ParentUser savedParent = parentUserRepository.save(parent);
 
         // 자녀 조회
-        ChildUser child = childUserRepository.findById(req.getChildId())
-                .orElse(null);
+        ChildUser child = childUserRepository.findById(req.getChildId()).orElse(null);
         if (child == null) {
             return ResponseEntity.badRequest()
                     .body(new ParentSignupResponse(false, "자녀를 찾을 수 없습니다.", savedParent.getId(), null, null));

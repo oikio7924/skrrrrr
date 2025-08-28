@@ -1,6 +1,7 @@
 package com.skrrrrr.harudam.member;
 
 import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,22 +22,23 @@ public class ChildUserController {
 
     private final ChildUserRepository childUserRepository;
 
-    /**
-     * 자녀 회원가입 요청 DTO
-     */
+    // ---------------- DTO ----------------
+
     @Getter
     @NoArgsConstructor
     public static class ChildSignupRequest {
+        private String userId;    // 소셜 로그인 ID
+        private String password;  // 선택
         private String name;
-        private String gender;   // "M" 또는 "F"
-        private String birth;    // yyyy-MM-dd
+        private String gender;    // "MALE" / "FEMALE"
+        private String birth;     // yyyy-MM-dd
         private String phone;
-        private String address;
+        private String addr1;
+        private String addr2;
+        private String pictureUrl; // 원본 사진 URL
+        private String voiceUrl;   // 원본 음성 URL
     }
 
-    /**
-     * 자녀 회원가입 응답 DTO
-     */
     @Getter
     @AllArgsConstructor
     public static class ChildSignupResponse {
@@ -45,34 +47,36 @@ public class ChildUserController {
         private Long childId;
     }
 
+    // ---------------- API ----------------
+
     /**
      * ✅ 자녀 회원가입 API
      */
     @PostMapping("/signup")
     public ResponseEntity<ChildSignupResponse> signup(@RequestBody ChildSignupRequest req) {
-        // 유효성 검사
-        if (req.getName() == null || req.getName().isBlank()
-                || req.getGender() == null || req.getGender().isBlank()
-                || req.getBirth() == null || req.getBirth().isBlank()
-                || req.getPhone() == null || req.getPhone().isBlank()) {
+        if (req.getUserId() == null || req.getName() == null || req.getGender() == null
+                || req.getBirth() == null || req.getPhone() == null) {
             return ResponseEntity.badRequest()
                     .body(new ChildSignupResponse(false, "필수값 누락", null));
         }
 
-        // ChildUser 엔티티 생성
         ChildUser child = new ChildUser();
+        child.setUserId(req.getUserId());
+        child.setPassword(req.getPassword());
         child.setName(req.getName());
-        child.setGender(Gender.valueOf(req.getGender().toUpperCase())); // "M"/"F"
-        child.setBirth(LocalDate.parse(req.getBirth()));                // yyyy-MM-dd
+        child.setGender(Gender.valueOf(req.getGender().toUpperCase()));
+        child.setBirth(LocalDate.parse(req.getBirth()));
         child.setPhone(req.getPhone());
-        child.setAddress(req.getAddress());
+        child.setAddr1(req.getAddr1());
+        child.setAddr2(req.getAddr2());
+        child.setPictureUrl(req.getPictureUrl());
+        child.setVoiceUrl(req.getVoiceUrl());
+        child.setState(UserState.PENDING); // 기본값
 
-        // DB 저장
         ChildUser saved = childUserRepository.save(child);
 
-        // 응답 반환
         return ResponseEntity.ok(
-                new ChildSignupResponse(true, "자녀 정보가 저장되었습니다.", saved.getId())
+                new ChildSignupResponse(true, "자녀 회원가입 완료", saved.getId())
         );
     }
 }

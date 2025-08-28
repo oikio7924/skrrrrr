@@ -1,7 +1,7 @@
 
 package com.skrrrrr.harudam.auth.dto;
 
-import com.skrrrrr.harudam.member.dto.MemberDto;
+import com.skrrrrr.harudam.member.dto.ChildUserDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,5 +16,5 @@ public class TokenDto {
 	private String accessToken;
 	private String refreshToken;
 	private long expiresIn;
-	private MemberDto user;
+	private ChildUserDto user;
 }

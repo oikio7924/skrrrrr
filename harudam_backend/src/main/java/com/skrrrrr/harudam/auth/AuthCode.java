@@ -4,6 +4,7 @@ import java.time.ZonedDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.skrrrrr.harudam.common.enums.AuthCodePurpose;
 import com.skrrrrr.harudam.common.enums.AuthCodeStatus;
 import com.skrrrrr.harudam.member.ChildUser;
 import com.skrrrrr.harudam.member.ParentUser;
@@ -46,6 +47,10 @@ public class AuthCode {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AuthCodeStatus status = AuthCodeStatus.ISSUED;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthCodePurpose purpose;
 
     @CreationTimestamp
     @Column(updatable = false)
