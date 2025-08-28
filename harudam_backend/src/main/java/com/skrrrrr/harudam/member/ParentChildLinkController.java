@@ -2,8 +2,8 @@ package com.skrrrrr.harudam.member;
 
 import com.skrrrrr.harudam.ai.AiImageService;
 import com.skrrrrr.harudam.ai.AiVoiceService;
+import com.skrrrrr.harudam.common.dto.ApiResponse;
 import com.skrrrrr.harudam.common.enums.UserState;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -37,32 +37,22 @@ public class ParentChildLinkController {
         private Long childId;
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class LinkResponse {
-        private boolean success;
-        private String message;
-        private Long linkId;
-    }
-
     // ---------------- API ----------------
 
     /**
      * ✅ 부모-자녀 관계 생성 API
      */
     @PostMapping("/connect")
-    public ResponseEntity<LinkResponse> connect(@RequestBody LinkRequest req) {
+    public ResponseEntity<ApiResponse<Long>> connect(@RequestBody LinkRequest req) {
         if (req.getParentId() == null || req.getChildId() == null) {
-            return ResponseEntity.badRequest()
-                    .body(new LinkResponse(false, "parentId, childId는 필수입니다.", null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("INVALID_REQUEST"));
         }
 
         ParentUser parent = parentUserRepository.findById(req.getParentId()).orElse(null);
         ChildUser child = childUserRepository.findById(req.getChildId()).orElse(null);
 
         if (parent == null || child == null) {
-            return ResponseEntity.badRequest()
-                    .body(new LinkResponse(false, "부모 또는 자녀를 찾을 수 없습니다.", null));
+            return ResponseEntity.badRequest().body(ApiResponse.fail("USER_NOT_FOUND"));
         }
 
         // 이미 존재하는 관계인지 확인
@@ -73,9 +63,7 @@ public class ParentChildLinkController {
                 );
 
         if (exists) {
-            return ResponseEntity.ok(
-                    new LinkResponse(true, "이미 부모-자녀 관계가 존재합니다.", null)
-            );
+            return ResponseEntity.ok(ApiResponse.ok("LINK_ALREADY_EXISTS", null));
         }
 
         // 새로운 관계 저장
@@ -84,21 +72,21 @@ public class ParentChildLinkController {
         link.setChildUser(child);
         ParentChildLink saved = parentChildLinkRepository.save(link);
 
-        return ResponseEntity.ok(
-                new LinkResponse(true, "부모-자녀 관계가 생성되었습니다.", saved.getLinkId())
-        );
+        return ResponseEntity.ok(ApiResponse.ok("LINK_CREATED", saved.getLinkId()));
     }
 
     /**
      * ✅ 서비스 시작하기 버튼 → 부모/자녀 ACTIVE 전환 + AI 학습 실행
      */
     @PostMapping("/complete/{childId}/{parentId}")
-    public ResponseEntity<?> completeSignup(@PathVariable Long childId,
-                                            @PathVariable Long parentId) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> completeSignup(
+            @PathVariable Long childId,
+            @PathVariable Long parentId) {
+
         ChildUser child = childUserRepository.findById(childId)
-                .orElseThrow(() -> new IllegalArgumentException("Child not found"));
+                .orElseThrow(() -> new IllegalArgumentException("CHILD_NOT_FOUND"));
         ParentUser parent = parentUserRepository.findById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("Parent not found"));
+                .orElseThrow(() -> new IllegalArgumentException("PARENT_NOT_FOUND"));
 
         // ---------------- AI 학습 실행 (스텁) ----------------
         Path aiChildPic = imageService.generateDiaryImage(childId, "자녀 학습용 프로필 이미지");
@@ -120,14 +108,13 @@ public class ParentChildLinkController {
         childUserRepository.save(child);
         parentUserRepository.save(parent);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "서비스 시작하기 완료",
-                "childId", child.getId(),
-                "parentId", parent.getId(),
+        return ResponseEntity.ok(ApiResponse.ok("SERVICE_STARTED", Map.of(
+                "childId", child.getId().toString(),
+                "parentId", parent.getId().toString(),
                 "childAiPic", aiChildPic.toString(),
                 "childAiVoice", aiChildVoice.toString(),
                 "parentAiPic", aiParentPic.toString(),
                 "parentAiVoice", aiParentVoice.toString()
-        ));
+        )));
     }
 }
