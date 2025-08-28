@@ -31,7 +31,7 @@ const router = createRouter({
     {
       path: '/notification',
       name: 'Notification',
-      component: Notification
+      component: Notification,
     },
     {
       path: '/onboarding',
@@ -60,9 +60,9 @@ const router = createRouter({
     },
 
     {
-      path: '/Signupdetail_child',
+      path: '/signupdetail_child/:childId',   // ✅ :childId 필요
       name: 'Signupdetail_child',
-      component: () => Signupdetail_Child,
+      component: () => import('@/views/Signupdetail_Child.vue')
     },
 
     {
@@ -182,6 +182,17 @@ const router = createRouter({
       path: '/signupcomplete',
       name: 'signupcomplete',
       component: Signup_Complete,
+    },
+
+    {
+      path: '/mypage/childvoicetraining',
+      name: 'ChildVoiceTraining',
+      component: () => import('@/views/ChildVoiceTraining.vue'),
+    },
+    {
+      path: '/mypage/voiceplayer',
+      name: 'VoicePlayer',
+      component: () => import('@/views/Voiceplayer.vue'),
     },
   ],
 

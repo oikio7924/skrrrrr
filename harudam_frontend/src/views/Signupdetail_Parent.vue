@@ -140,7 +140,7 @@
 <script setup lang="ts">
 import { reactive, computed, ref, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router' // ✅ useRoute 추가
-import { sendVerificationCode, verifyCode } from '@/api/verification'
+import { sendParentCode, verifyParentCode } from '@/api/verification'
 
 const router = useRouter()
 const route = useRoute()
@@ -222,19 +222,17 @@ function startCountdown(sec: number) {
 // ▼ 인증번호 전송
 async function sendSMS() {
   if (!valid.phone || countdown.value > 0) return
-  if (!childIdForVerification.value) {
-    alert('자녀 ID가 없습니다. 이전 단계에서 자녀 생성/선택을 먼저 해주세요.')
-    return
-  }
+
   sending.value = true
   verificationStatus.message = '인증번호를 전송 중입니다...'
   verificationStatus.type = ''
+
   try {
-    const digits = form.phone.replace(/\D/g, '')
-    const res = await sendVerificationCode({
-      childId: childIdForVerification.value, // <- .value 사용
-      phone: digits,
-    })
+    const digits = form.phone.replace(/\D/g, '')      // 하이픈 제거
+
+    // ❌ sendVerificationCode(...)  ->  ✅ sendParentCode(...)
+    const res = await sendParentCode({ phone: digits })
+
     if (res.success) {
       verificationStatus.message = res.message || '인증번호를 전송했습니다. 3분 이내에 입력해주세요.'
       verificationStatus.type = 'success'
@@ -256,11 +254,19 @@ async function sendSMS() {
 // ▼ 인증번호 확인
 async function verifySMS() {
   if (!valid.code) { touched.code = true; return }
+
   verifyingCode.value = true
   verificationStatus.message = ''
+
   try {
     const digits = form.phone.replace(/\D/g, '')
-    const res = await verifyCode({ phone: digits, code: form.code })
+
+    // ❌ verifyCode(...)  ->  ✅ verifyParentCode(...)
+    const res = await verifyParentCode({
+      phone: digits,
+      code: String(form.code)           // 앞자리 0 보존
+    })
+
     if (res.success) {
       codeVerified.value = true
       verificationStatus.message = res.message || '인증되었습니다.'
