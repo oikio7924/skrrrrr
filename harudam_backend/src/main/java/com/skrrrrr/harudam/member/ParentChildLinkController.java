@@ -1,5 +1,8 @@
 package com.skrrrrr.harudam.member;
 
+import com.skrrrrr.harudam.ai.AiImageService;
+import com.skrrrrr.harudam.ai.AiVoiceService;
+import com.skrrrrr.harudam.common.enums.UserState;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -7,8 +10,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.Path;
+import java.util.Map;
+
 /**
- * 부모-자녀 관계 연결 API
+ * 부모-자녀 관계 연결 + 서비스 시작하기 API
  */
 @RestController
 @RequestMapping("/api/link")
@@ -19,10 +25,11 @@ public class ParentChildLinkController {
     private final ParentUserRepository parentUserRepository;
     private final ChildUserRepository childUserRepository;
     private final ParentChildLinkRepository parentChildLinkRepository;
+    private final AiImageService imageService;
+    private final AiVoiceService voiceService;
 
-    /**
-     * 관계 생성 요청 DTO
-     */
+    // ---------------- DTO ----------------
+
     @Getter
     @NoArgsConstructor
     public static class LinkRequest {
@@ -30,9 +37,6 @@ public class ParentChildLinkController {
         private Long childId;
     }
 
-    /**
-     * 관계 생성 응답 DTO
-     */
     @Getter
     @AllArgsConstructor
     public static class LinkResponse {
@@ -40,6 +44,8 @@ public class ParentChildLinkController {
         private String message;
         private Long linkId;
     }
+
+    // ---------------- API ----------------
 
     /**
      * ✅ 부모-자녀 관계 생성 API
@@ -51,10 +57,8 @@ public class ParentChildLinkController {
                     .body(new LinkResponse(false, "parentId, childId는 필수입니다.", null));
         }
 
-        ParentUser parent = parentUserRepository.findById(req.getParentId())
-                .orElse(null);
-        ChildUser child = childUserRepository.findById(req.getChildId())
-                .orElse(null);
+        ParentUser parent = parentUserRepository.findById(req.getParentId()).orElse(null);
+        ChildUser child = childUserRepository.findById(req.getChildId()).orElse(null);
 
         if (parent == null || child == null) {
             return ResponseEntity.badRequest()
@@ -62,9 +66,7 @@ public class ParentChildLinkController {
         }
 
         // 이미 존재하는 관계인지 확인
-        boolean exists = parentChildLinkRepository
-                .findAll()
-                .stream()
+        boolean exists = parentChildLinkRepository.findAll().stream()
                 .anyMatch(link ->
                         link.getParentUser().getId().equals(req.getParentId()) &&
                         link.getChildUser().getId().equals(req.getChildId())
@@ -85,5 +87,47 @@ public class ParentChildLinkController {
         return ResponseEntity.ok(
                 new LinkResponse(true, "부모-자녀 관계가 생성되었습니다.", saved.getLinkId())
         );
+    }
+
+    /**
+     * ✅ 서비스 시작하기 버튼 → 부모/자녀 ACTIVE 전환 + AI 학습 실행
+     */
+    @PostMapping("/complete/{childId}/{parentId}")
+    public ResponseEntity<?> completeSignup(@PathVariable Long childId,
+                                            @PathVariable Long parentId) {
+        ChildUser child = childUserRepository.findById(childId)
+                .orElseThrow(() -> new IllegalArgumentException("Child not found"));
+        ParentUser parent = parentUserRepository.findById(parentId)
+                .orElseThrow(() -> new IllegalArgumentException("Parent not found"));
+
+        // ---------------- AI 학습 실행 (스텁) ----------------
+        Path aiChildPic = imageService.generateDiaryImage(childId, "자녀 학습용 프로필 이미지");
+        Path aiChildVoice = voiceService.trainChildVoice(childId,
+                Path.of("uploads/child/" + childId + "/voice/sample.mp3"));
+        Path aiParentPic = imageService.generateAutobiographyCover(parentId, "부모 자서전 표지 이미지");
+        Path aiParentVoice = voiceService.trainParentVoice(parentId,
+                Path.of("uploads/parent/" + parentId + "/" + parentId + "_voice.zip"));
+
+        // ---------------- DB 업데이트 ----------------
+        child.setAiPicturePath(aiChildPic.toString());
+        child.setAiVoicePath(aiChildVoice.toString());
+        parent.setAiPicturePath(aiParentPic.toString());
+        parent.setAiVoicePath(aiParentVoice.toString());
+
+        child.setState(UserState.ACTIVE);
+        parent.setState(UserState.ACTIVE);
+
+        childUserRepository.save(child);
+        parentUserRepository.save(parent);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "서비스 시작하기 완료",
+                "childId", child.getId(),
+                "parentId", parent.getId(),
+                "childAiPic", aiChildPic.toString(),
+                "childAiVoice", aiChildVoice.toString(),
+                "parentAiPic", aiParentPic.toString(),
+                "parentAiVoice", aiParentVoice.toString()
+        ));
     }
 }

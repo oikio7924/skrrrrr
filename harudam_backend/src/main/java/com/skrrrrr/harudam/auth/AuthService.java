@@ -7,7 +7,7 @@ import com.skrrrrr.harudam.common.enums.UserType;
 import com.skrrrrr.harudam.jwt.JwtTokenProvider;
 import com.skrrrrr.harudam.member.ChildUser;
 import com.skrrrrr.harudam.member.ChildUserRepository;
-import com.skrrrrr.harudam.member.dto.MemberDto;
+import com.skrrrrr.harudam.member.dto.ChildUserDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -70,7 +70,7 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(child);
         String refreshToken = jwtTokenProvider.createRefreshToken(child);
 
-        MemberDto member = new MemberDto(
+        ChildUserDto childDto = new ChildUserDto(
                 child.getId(),
                 email,
                 child.getName(),
@@ -82,7 +82,7 @@ public class AuthService {
                 accessToken,
                 refreshToken,
                 3600L,
-                member
+                childDto
         );
     }
 
@@ -101,7 +101,7 @@ public class AuthService {
         String newAccessToken = jwtTokenProvider.createAccessToken(child);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(child); // 회전(rotate) 전략
 
-        MemberDto member = new MemberDto(
+        ChildUserDto childDto = new ChildUserDto(
                 child.getId(),
                 child.getUserId(), // email 없으면 userId 대신
                 child.getName(),
@@ -113,7 +113,7 @@ public class AuthService {
                 newAccessToken,
                 newRefreshToken,
                 3600L,
-                member
+                childDto
         );
     }
 

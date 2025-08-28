@@ -41,8 +41,10 @@ public class SecurityConfig {
                 // ✅ 테스트용
                 .requestMatchers("/api/test/**").permitAll()
                 // ✅ 휴대폰 인증 (childId 있는 경우/없는 경우 모두 허용)
+                .requestMatchers("/api/verification/**").permitAll()
+                
                 .requestMatchers("/api/send-verification-code",
-                                 "/api/send-verification-signup",
+                                 "/api/send-verification-signup",                    
                                  "/api/verify-code").permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
