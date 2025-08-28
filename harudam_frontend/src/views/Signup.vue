@@ -3,14 +3,8 @@
     <!-- 상단 뒤로가기 -->
     <button class="back-btn" aria-label="뒤로가기" @click="goBack">
       <svg viewBox="0 0 24 24" class="icon">
-        <path
-          d="M15.5 19.5 8 12l7.5-7.5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
+        <path d="M15.5 19.5 8 12l7.5-7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" />
       </svg>
     </button>
 
@@ -31,12 +25,8 @@
       <!-- 소셜 회원가입 버튼들 -->
       <section class="buttons">
         <!-- 카카오 -->
-        <button
-          class="btn btn-kakao"
-          :disabled="!!loading || !isKakaoReady"
-          @click="startSocialSignup('kakao')"
-          aria-label="카카오톡으로 계속하기"
-        >
+        <button class="btn btn-kakao" :disabled="!!loading || !isKakaoReady" @click="startSocialSignup('kakao')"
+          aria-label="카카오톡으로 계속하기">
           <span class="btn-icon" aria-hidden="true">
             <img src="@/assets/social_login_logo/kakao_logo.png" alt="카카오톡" />
           </span>
@@ -44,12 +34,7 @@
         </button>
 
         <!-- 네이버 -->
-        <button
-          class="btn btn-naver"
-          :disabled="!!loading"
-          @click="startSocialSignup('naver')"
-          aria-label="네이버로 계속하기"
-        >
+        <button class="btn btn-naver" :disabled="!!loading" @click="startSocialSignup('naver')" aria-label="네이버로 계속하기">
           <span class="btn-icon" aria-hidden="true">
             <img src="@/assets/social_login_logo/naver_logo.png" alt="네이버" />
           </span>
@@ -57,12 +42,8 @@
         </button>
 
         <!-- 구글 -->
-        <button
-          class="btn btn-google"
-          :disabled="!!loading"
-          @click="startSocialSignup('google')"
-          aria-label="Google로 계속하기"
-        >
+        <button class="btn btn-google" :disabled="!!loading" @click="startSocialSignup('google')"
+          aria-label="Google로 계속하기">
           <span class="btn-icon" aria-hidden="true">
             <img src="@/assets/social_login_logo/google_logo.png" alt="Google" />
           </span>
@@ -214,12 +195,10 @@ async function startSocialSignup(provider: Provider) {
     const kakao = getKakao();
     if (!kakao) throw new Error("Kakao SDK 없음");
 
-    // 기존 토큰 정리
+    // 1. 카카오 로그인 팝업을 띄우고 사용자의 로그인을 기다립니다.
     if (kakao.Auth.getAccessToken()) {
       await new Promise<void>((resolve) => kakao.Auth.logout(() => resolve()));
     }
-
-    // 카카오 로그인
     await new Promise<void>((resolve, reject) => {
       kakao.Auth.login({
         scope: "account_email,profile_nickname",
@@ -228,55 +207,45 @@ async function startSocialSignup(provider: Provider) {
       });
     });
 
-    // 토큰 확인
+    // 2. 로그인 성공 후 내부적으로 저장된 액세스 토큰을 가져옵니다.
     const token = kakao.Auth.getAccessToken();
     if (!token) throw new Error("카카오 토큰 없음");
 
-    // 🔹 카카오 프로필 요청
-    const kakaoUser: SocialProfile = await new Promise((resolve, reject) => {
-      kakao.API.request({
-        url: "/v2/user/me",
-        success: (res: KakaoUserInfo) => {
-          resolve({
-            provider: "kakao",
-            id: String(res.id),
-            name: res.properties?.nickname || "이름없음",
-            email: res.kakao_account?.email,
-          });
-        },
-        fail: (err) => reject(err),
-      });
-    });
-
-    // 🔹 JWT 발급 (백엔드 통신)
-    const res = await fetch("http://localhost:8080/api/auth/social-login", {
+    // 3. 백엔드 서버에 토큰을 보내 JWT와 자녀 ID를 요청합니다.
+    const res = await fetch("http://localhost:8081/api/auth/social-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        provider: "KAKAO",   // 반드시 body 안으로
-        code: token,         // 카카오에서 받은 accessToken
+        provider: "KAKAO",
+        code: token,
       }),
     });
 
-    if (!res.ok) throw new Error(`백엔드 응답 오류: ${res.status}`);
-    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(`백엔드 응답 오류: ${res.status}`);
+    }
 
-    // localStorage 저장 (2개 인자 필수!)
+    // 4. 백엔드로부터 받은 JSON 응답을 파싱합니다.
+    const response = await res.json();
+    const data = response.data; // 실제 데이터는 'data' 객체 안에 들어있습니다.
+
+    // 5. 실제 데이터 구조에 맞춰 'user' 객체에서 자녀 ID를 추출합니다.
+    const newChildId = data.user?.id;
+
+    // 6. 추출한 자녀 ID가 유효한지 최종 확인합니다.
+    if (!newChildId) {
+      throw new Error("서버 응답에서 유효한 자녀 ID(data.user.id)를 찾지 못했습니다.");
+    }
+
+    // 7. 받은 토큰들을 로컬 스토리지에 저장합니다.
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
 
-
-    // 🔹 상세정보 입력 페이지로 이동 (한 번만!)
-    router.push({
-      name: "Signupdetail_child",
-      query: {
-        id: kakaoUser.id,
-        name: kakaoUser.name,
-        email: kakaoUser.email || "",
-      },
-    });
+    // 8. 유효한 자녀 ID를 가지고 다음 페이지로 이동합니다.
+    router.push({ path: `/signupdetail_child/${newChildId}` });
 
     console.log("카카오 로그인 + 백엔드 연동 성공");
+
   } catch (err) {
     console.error("카카오 로그인 과정에서 에러 발생:", err);
     error.value = err instanceof Error ? err.message : String(err);
@@ -284,6 +253,7 @@ async function startSocialSignup(provider: Provider) {
     loading.value = null;
   }
 }
+
 
 /** ===== 유틸 ===== */
 function reset() {
@@ -341,6 +311,7 @@ console.log(
   color: #2d251c;
   cursor: pointer;
 }
+
 .back-btn .icon {
   width: 24px;
   height: 24px;
@@ -373,12 +344,14 @@ console.log(
   color: #8869ba;
   font-weight: 900;
 }
+
 .subtitle {
   margin: 0 0 14px;
   text-align: center;
   font-size: 14px;
   color: #9b9aa1;
 }
+
 .subtitle .highlight {
   color: #8869ba;
   font-weight: 800;
@@ -405,10 +378,12 @@ console.log(
   position: relative;
   margin: 0;
 }
+
 .btn-text {
   flex: 1;
   text-align: center;
 }
+
 .btn-icon {
   position: absolute;
   left: 16px;
@@ -418,11 +393,13 @@ console.log(
   align-items: center;
   justify-content: center;
 }
+
 .btn-icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
+
 .btn-google {
   background: #fff;
   border: 1px solid #ddd;
@@ -455,6 +432,7 @@ console.log(
   padding: 24px 16px;
   box-sizing: border-box;
 }
+
 .page {
   padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
   padding-top: calc(env(safe-area-inset-top) + 16px);
@@ -464,6 +442,7 @@ console.log(
 .btn:hover {
   filter: brightness(95%);
 }
+
 .btn:active {
   transform: scale(0.97);
   filter: brightness(90%);
@@ -474,15 +453,18 @@ console.log(
   background-color: #fee500;
   color: #000;
 }
+
 .btn-naver {
   background-color: #03c75a;
   color: #fff;
 }
+
 .btn-google {
   background-color: #fff;
   color: #000;
   border: 1px solid #ddd;
 }
+
 .btn-apple {
   background-color: #000;
   color: #fff;
@@ -494,9 +476,11 @@ console.log(
   font-size: 12px;
   color: #444;
 }
+
 .status .err {
   color: #c0392b;
 }
+
 .mini {
   margin-top: 6px;
   border: none;
@@ -511,13 +495,16 @@ console.log(
   .logo {
     width: 120px;
   }
+
   .title {
     font-size: 20px;
     margin-top: 10px;
   }
+
   .buttons {
     gap: 8px;
   }
+
   .btn {
     height: 48px;
     font-size: 15px;

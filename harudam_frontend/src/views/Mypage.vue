@@ -28,8 +28,15 @@
 
     <!-- 상단 프로필 -->
     <div class="profile-section">
-      <div class="profile-photo">사진</div>
-      <h2 class="profile-name">{{ user.name }}</h2>
+      <div class="profile-photo">
+        <template v-if="user?.profileImage">
+          <img :src="user.profileImage" alt="프로필 이미지" class="photo-img" />
+        </template>
+        <template v-else>
+          사진
+        </template>
+      </div>
+      <h2 class="profile-name">{{ user ? user.name : "이름 없음" }}</h2>
     </div>
 
     <!-- 상단 메뉴 (이모지 아이콘) -->
@@ -58,13 +65,29 @@
       </ul>
     </section>
 
-    <!-- 서비스 -->
+    <!-- 자녀 설정 -->
     <section class="info-card">
-      <h3 class="section-title">서비스</h3>
+      <h3 class="section-title">자녀 설정</h3>
       <ul>
-        <li class="info-item">자녀 AI 목소리 설정</li>
-        <li class="info-item">자녀 AI 캐릭터 변경</li>
-        <li class="info-item">자녀 항목 추가</li>
+        <li class="info-item" @click="$router.push({ name: 'ChildVoiceTraining' })">
+          자녀 AI 목소리 설정
+        </li>
+        <li class="info-item" @click="$router.push({ name: 'child-character' })">
+          자녀 AI 캐릭터 변경
+        </li>
+      </ul>
+    </section>
+
+    <!-- 부모 설정 -->
+    <section class="info-card">
+      <h3 class="section-title">부모 설정</h3>
+      <ul>
+        <li class="info-item" @click="$router.push({ name: 'parent-voice' })">
+          부모 AI 목소리 설정
+        </li>
+        <li class="info-item" @click="$router.push({ name: 'parent-character' })">
+          부모 AI 캐릭터 변경
+        </li>
       </ul>
     </section>
 
@@ -74,12 +97,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import FooterNav from "@/components/FooterNav.vue"
+import apiClient from "@/api/index" // ✅ axios 인스턴스
+
+type UserInfo = {
+  id: number
+  name: string
+  email: string
+  profileImage?: string // ✅ 선택적 필드
+}
 
 const router = useRouter()
-const user = ref({ name: "이하나" })
+const user = ref<UserInfo | null>(null)
+
+// ✅ 사용자 정보 불러오기
+const loadUserInfo = async () => {
+  try {
+    const { data } = await apiClient.get<UserInfo>("/api/users/me")
+    user.value = data
+  } catch (e) {
+    console.error("사용자 정보 불러오기 실패", e)
+  }
+}
+
+onMounted(() => {
+  loadUserInfo()
+})
 
 function goSettings() {
   router.push("/setting")
@@ -95,13 +140,15 @@ function goHome() {
   width: 100%;
   background: #f9f9fb;
   min-height: 100vh;
-  padding-top: 70px;   /* 헤더 높이만큼 패딩 추가 */
-  padding-bottom: 5rem;
+  padding-top: 70px;
+  /* 헤더 높이 */
+  padding-bottom: 6rem;
+  /* ✅ FooterNav 높이만큼 여백 확보 */
   font-family: "Inter", sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow-y: auto;   /* ✅ 본문만 스크롤 */
+  overflow-y: auto;
 }
 
 /* ✅ 헤더 */
@@ -110,11 +157,14 @@ function goHome() {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;              /* ✅ 공통 헤더 크기 */
+  padding: 12px 20px;
+  /* ✅ 공통 헤더 크기 */
   background: #fff;
-  border-bottom-left-radius: 12px; /* ✅ 라운드 처리 */
+  border-bottom-left-radius: 12px;
+  /* ✅ 라운드 처리 */
   border-bottom-right-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* ✅ 부드러운 그림자 */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  /* ✅ 부드러운 그림자 */
   position: fixed;
   top: 0;
   z-index: 100;
@@ -179,11 +229,15 @@ function goHome() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
-  border: 4px solid #c4b5fd;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  /* ✅ 이미지가 영역 넘치지 않게 */
+}
+
+.photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* ✅ 원형 안에 꽉 차게 */
 }
 
 .profile-name {

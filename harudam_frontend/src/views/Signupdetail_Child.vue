@@ -136,16 +136,23 @@
                       <span v-else>본인의 목소리를 녹음해주세요.</span>
                     </span>
                     <button v-if="!isRecording && !recordedAudioUrl" @click="startRecording" type="button"
-                      class="micro-btn">녹음
-                      시작</button>
+                      class="micro-btn">녹음 시작</button>
                     <button v-if="isRecording" @click="stopRecording" type="button" class="micro-btn stop">녹음
                       중지</button>
                     <button v-if="!isRecording && recordedAudioUrl" @click="resetRecording" type="button"
-                      class="micro-btn">다시
-                      녹음</button>
+                      class="micro-btn">다시 녹음</button>
                     <button v-if="!isRecording && recordedAudioUrl" @click="removeRecording" type="button"
                       class="micro-btn danger">삭제</button>
                   </div>
+
+                  <!-- ✅ 안내 문구 추가 -->
+                  <p class="voice-hint">
+                    안내: 원활한 AI 학습을 위해 최소 1분 이상 녹음해주세요.<br />
+                    (1분 미만은 음성 품질이 낮아질 수 있습니다)
+                  </p>
+
+
+
                   <div v-if="recordedAudioUrl" class="audio-player-wrapper">
                     <audio :src="recordedAudioUrl" controls></audio>
                   </div>
@@ -210,7 +217,8 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { sendVerificationCode, verifyCode } from '@/api/verification'
+import { sendChildCode, verifyChildCode } from '@/api/verification'
+import http from '@/api/http'
 const router = useRouter()
 
 const route = useRoute()
@@ -278,27 +286,44 @@ const valid = reactive({
 
 
 async function sendSMS() {
-  if (!phoneValid.value) { alert('올바른 휴대폰 번호를 입력해주세요.'); return }
-  if (!childIdForVerification.value) { alert('자녀 ID가 없습니다. 이전 단계에서 자녀 생성/선택을 먼저 해주세요.'); return }
+  if (!phoneValid.value) {
+    alert('올바른 휴대폰 번호를 입력해주세요.');
+    return;
+  }
+
+  // ▼▼▼ 이 부분이 중요합니다 ▼▼▼
+  const payload = {
+      childId: childIdForVerification.value,
+      phone: phoneDigits.value
+  };
+  console.log("백엔드로 전송하는 데이터:", payload); // ◀◀ 이 로그를 확인할 것입니다!
+  // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
   try {
-    const res = await sendVerificationCode({
-      childId: childIdForVerification.value,
-      phone: phoneDigits.value,
-    })
-    if (res?.success) {
-      smsInfo.value = '인증번호를 전송했습니다. 3분 이내에 입력해 주세요.'
-      alert(res.message || '인증번호를 전송했습니다.')
-    } else {
-      alert(res?.message || '인증번호 전송에 실패했습니다.')
+    const res = await fetch("http://localhost:8081/api/verification/send-child", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      throw new Error(`서버 응답 오류: ${res.status}`);
     }
+
+    const responseData = await res.json();
+
+    if (responseData.success) {
+      smsInfo.value = '인증번호를 전송했습니다. 3분 이내에 입력해 주세요.';
+      alert(responseData.message || '인증번호를 전송했습니다.');
+    } else {
+      alert(responseData.message || '인증번호 전송에 실패했습니다.');
+    }
+
   } catch (e: any) {
-    console.error(e)
-    alert(e?.response?.data?.message || '인증번호 전송 중 오류가 발생했습니다.')
+    console.error("인증번호 전송 함수 오류:", e);
+    alert('인증번호 전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
   }
 }
-
-
 /**
  * @function verifySMS
  * '인증확인' 버튼 클릭 시 실행됩니다.
@@ -306,22 +331,29 @@ async function sendSMS() {
  */
 
 async function verifySMS() {
-  if (!/^\d{6}$/.test(form.smsCode)) { alert('6자리 인증번호를 입력해주세요.'); return }
+  if (!/^\d{6}$/.test(form.smsCode)) {
+    alert('6자리 인증번호를 입력해주세요.');
+    return;
+  }
   try {
-    const res = await verifyCode({ phone: phoneDigits.value, code: form.smsCode })
-    if (res?.success) {
-      form.phoneVerified = true
-      smsInfo.value = '✅ 인증이 완료되었습니다.'
-      alert(res.message || '인증 완료')
+    const { data } = await http.post('/api/verification/verify-child', {
+      phone: phoneDigits.value,
+      code: String(form.smsCode)
+    }); // data = ApiResponse
+
+    if (data?.success) {
+      form.phoneVerified = true;
+      smsInfo.value = '✅ 인증이 완료되었습니다.';
+      alert(data.message || '인증 완료');
     } else {
-      form.phoneVerified = false
-      smsInfo.value = '인증번호가 올바르지 않습니다.'
-      alert(res?.message || '인증번호가 올바르지 않습니다.')
+      form.phoneVerified = false;
+      smsInfo.value = '인증번호가 올바르지 않습니다.';
+      alert(data?.message || '인증번호가 올바르지 않습니다.');
     }
   } catch (e: any) {
-    form.phoneVerified = false
-    console.error(e)
-    alert(e?.response?.data?.message || '인증 처리 중 오류가 발생했습니다.')
+    form.phoneVerified = false;
+    console.error(e);
+    alert(e?.response?.data?.message || '인증 처리 중 오류가 발생했습니다.');
   }
 }
 
@@ -515,12 +547,13 @@ section.card {
 
 .row {
   display: block;
-  margin: 10px 0;
+  margin: 16px 0; /* ✅ 기존 10px → 16px로 간격 확대 */
 }
 
 fieldset.row {
   border: none;
   padding: 0;
+  margin: 16px 0; /* 성별 선택 영역도 동일 간격 */
 }
 
 .label {
@@ -574,6 +607,20 @@ fieldset.row {
 .field input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 0.6;
+}
+
+.voice-hint {
+  margin-top: 6px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: #777;
+  line-height: 1.6;
+
+  padding-left: 28px; /* ✅ 오른쪽으로 들여쓰기 */
+  text-indent: -16px; /* 첫 줄 아이콘 포함 정렬 */
+}
+.voice-hint::before {
+  content: "🎤 ";
 }
 
 

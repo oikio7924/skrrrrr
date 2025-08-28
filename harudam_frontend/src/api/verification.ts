@@ -1,15 +1,26 @@
-import { http } from './http'
+// src/api/verification.ts
+import http from '@/api/http'
 
-export type SendCodeReq = { childId: number; phone: string }
+/** 공통 타입 */
 export type VerifyReq = { phone: string; code: string }
-export type SimpleRes = { success: boolean; message: string }
-
-export async function sendVerificationCode(payload: SendCodeReq) {
-  const { data } = await http.post<SimpleRes>('/api/verification/send-code', payload)
-  return data
+export type ApiResponse<T = unknown> = {
+  success: boolean
+  message?: string
+  data?: T
 }
 
-export async function verifyCode(payload: VerifyReq) {
-  const { data } = await http.post<SimpleRes>('/api/verification/verify', payload)
-  return data
-}
+/** 자녀 */
+export type SendChildCodeReq = { childId: number; phone: string }
+export const sendChildCode = (p: SendChildCodeReq) =>
+  http.post<ApiResponse>('/api/verification/send-child', p).then(r => r.data)
+
+export const verifyChildCode = (p: VerifyReq) =>
+  http.post<ApiResponse>('/api/verification/verify-child', p).then(r => r.data)
+
+/** 부모 */
+export type SendParentCodeReq = { phone: string }
+export const sendParentCode = (p: SendParentCodeReq) =>
+  http.post<ApiResponse>('/api/verification/send-parent', p).then(r => r.data)
+
+export const verifyParentCode = (p: VerifyReq) =>
+  http.post<ApiResponse>('/api/verification/verify-parent', p).then(r => r.data)

@@ -2,29 +2,43 @@
   <div class="main-child">
     <Header />
     <main class="content">
-      <h1 class="title">아버지의 하루</h1>
+      <h1 class="title">
+        {{ parent ? (parent.gender === "M" ? "아버지" : "어머니") + "의 하루" : "부모님의 하루" }}
+      </h1>
       <p class="subtitle">어떤 하루를 보내시고 계실까요?</p>
 
-      <section class="card" @click="goToDiaryDetail('2023-08-22')">
-        <span class="badge">8월 22일 그림일기</span>
-        <div class="image-box">Image</div>
+      <!-- 그림일기 카드 -->
+      <!-- 그림일기 카드 -->
+      <section class="card" @click="goToDiaryFeed">
+        <span class="badge">
+          {{ diary ? formatDate(diary.date) + " 그림일기" : "그림일기" }}
+        </span>
 
-        <h2 class="card-title">손자와 함께한 강가에서의 오후</h2>
+        <!-- 이미지 영역 -->
+        <div class="image-box">
+          <img v-if="diary && diary.imageUrl" :src="diary.imageUrl" alt="그림일기 이미지" />
+          <span v-else>이미지가 없습니다.</span>
+        </div>
+
+        <!-- 제목 -->
+        <h2 class="card-title">
+          {{ diary ? diary.title : "제목이 없습니다." }}
+        </h2>
+
+        <!-- 본문 -->
         <p class="card-text">
-          오랜만에 손주 너석과 함께 강가에 앉아 낚싯대를 드리우니,
-          세월의 흐름도 잊을 만큼 평화로운 시간이었다.
-          고기는 못 잡아도 마음만은 풍족한 하루.
+          {{ diary ? diary.content : "등록된 그림일기가 없어요." }}
         </p>
 
+        <!-- 감정 -->
         <div class="emotion-box">
-          <span class="emoji">😊</span>
+          <span class="emoji">{{ diary ? diary.emoji : "😶" }}</span>
           <div class="emotion-text">
             <p class="label">대표 감정</p>
-            <p class="desc">행복, 평온함</p>
+            <p class="desc">{{ diary ? diary.emotion : "감정 정보 없음" }}</p>
           </div>
         </div>
       </section>
-
       <section class="button-group">
         <button class="btn" @click="goToCalendar">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -48,29 +62,14 @@
 
       <section class="card schedule-card">
         <div class="schedule-header">
-          <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14
-                     a2 2 0 002-2V7a2 2 0 00-2-2H5
-                     a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
           <h3 class="card-title">최근 주요 일정</h3>
-
-          <!-- ✅ 오른쪽 끝 일정추가하기 버튼 -->
-          <button class="add-btn" @click="goToDetail(todayStr)">
+          <button class="add-btn" @click="goToDetail(new Date().toISOString().slice(0, 10))">
             일정추가하기
           </button>
         </div>
-
         <ul class="schedule-list">
-          <li v-if="eventStore.sortedEvents.length === 0" class="schedule-item-empty">
-            등록된 일정이 없어요.
-          </li>
-          <li
-            v-for="event in eventStore.sortedEvents.slice(-3)"
-            :key="event.id"
-            class="schedule-item"
-            @click="goToDetail(event.date)"
-          >
+          <li v-if="events.length === 0" class="schedule-item-empty">등록된 일정이 없어요.</li>
+          <li v-for="event in events.slice(-3)" :key="event.id" class="schedule-item" @click="goToDetail(event.date)">
             <span class="date">{{ formatDate(event.date) }}</span>
             <span class="text">{{ event.title }}</span>
           </li>
@@ -83,70 +82,113 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted } from "vue";
+import { defineComponent, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import FooterNav from "@/components/FooterNav.vue";
 import Header from "@/components/Header.vue";
-import { useEventStore } from "@/stores/eventStore";
+import apiClient from "@/api/index"; // axios 인스턴스
+
+type ParentInfo = {
+  id: number;
+  name: string;
+  gender: "M" | "F";
+  birth: string;
+};
+
+type Diary = {
+  id: number;
+  date: string;
+  title: string;
+  content: string;
+  emotion: string;
+  emoji: string;
+  imageUrl: string;
+};
+
+type Event = {
+  id: number;
+  date: string;
+  title: string;
+};
 
 export default defineComponent({
   name: "MainChild",
   components: { FooterNav, Header },
   setup() {
     const router = useRouter();
-    const eventStore = useEventStore();
 
+    // ✅ 부모 정보
+    const parent = ref<ParentInfo | null>(null);
+    const loadParentInfo = async () => {
+      try {
+        const { data } = await apiClient.get<ParentInfo>("/api/parent/1");
+        parent.value = data;
+      } catch (e) {
+        console.error("부모 정보 불러오기 실패", e);
+      }
+    };
+
+    // ✅ 그림일기
+    const diary = ref<Diary | null>(null);
+    const loadDiary = async () => {
+      try {
+        const { data } = await apiClient.get<Diary>("/api/diaries/child/1");
+        diary.value = data;
+      } catch (e) {
+        console.error("그림일기 불러오기 실패", e);
+      }
+    };
+
+    // ✅ 일정
+    const events = ref<Event[]>([]);
+    const loadEvents = async () => {
+      try {
+        const { data } = await apiClient.get<Event[]>("/api/events/child/1");
+        events.value = data;
+      } catch (e) {
+        console.error("일정 불러오기 실패", e);
+      }
+    };
+
+    // ✅ 마운트 시 불러오기
     onMounted(() => {
-      eventStore.loadEvents(); // 컴포넌트 마운트 시 일정 불러오기
+      loadParentInfo();
+      loadDiary();
+      loadEvents();
     });
 
-    // ✅ 일정 상세 페이지 이동
+    // ✅ 라우팅
     const goToDetail = (date: string) => {
       router.push({ name: "schedule_c", params: { date } });
     };
-
-    // ✅ 그림일기 상세 페이지 이동
-    const goToDiaryDetail = (date: string) => {
-      router.push({ name: "profile_diary", params: { date } });
+    const goToDiaryFeed = () => {
+      router.push({ name: "profile_diary" }); // ✅ 그림일기 피드로 이동
     };
+    const goToCalendar = () => router.push({ name: "calendar_child" });
+    const goToMemoir = () => router.push({ name: "memoir" });
 
-    // ✅ 달력 이동
-    const goToCalendar = () => {
-      router.push({ name: "calendar_child" });
-    };
-
-    // ✅ 자서전 이동
-    const goToMemoir = () => {
-      router.push({ name: "memoir" });
-    };
-
-    // ✅ YYYY-MM-DD → "M월 D일"
+    // ✅ 날짜 포맷
     const formatDate = (dateString: string) => {
-      const [year, month, day] = dateString.split("-").map(Number);
-      return `${month}월 ${day}일`;
+      const [y, m, d] = dateString.split("-").map(Number);
+      return `${m}월 ${d}일`;
     };
-
-    // ✅ 오늘 날짜(클라이언트 기준) → YYYY-MM-DD
-    const todayStr = (() => {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    })();
 
     return {
+      parent,
+      diary,
+      events,
       goToDetail,
-      goToDiaryDetail,
+      goToDiaryFeed,
       goToCalendar,
       goToMemoir,
-      eventStore,
       formatDate,
-      todayStr,
     };
   },
 });
 </script>
+
+
+
 
 <style>
 #app {
@@ -350,22 +392,27 @@ body {
 
 /* ✅ 일정추가하기 버튼 (헤더 오른쪽 끝) */
 .add-btn {
-  margin-left: auto;           /* 오른쪽 끝으로 밀기 */
+  margin-left: auto;
+  /* 오른쪽 끝으로 밀기 */
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1;
-  border: 1px solid #d8b4fe;   /* 라일락 보더 */
-  color: #6d28d9;              /* 진보라 텍스트 */
+  border: 1px solid #d8b4fe;
+  /* 라일락 보더 */
+  color: #6d28d9;
+  /* 진보라 텍스트 */
   background: #ffffff;
   border-radius: 9999px;
   cursor: pointer;
-  white-space: nowrap;         /* 한 줄 유지 (넘침 방지) */
+  white-space: nowrap;
+  /* 한 줄 유지 (넘침 방지) */
   transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .add-btn:hover {
-  background: #f3e8ff;        /* 연보라 배경 */
+  background: #f3e8ff;
+  /* 연보라 배경 */
   border-color: #c084fc;
   color: #5b21b6;
 }

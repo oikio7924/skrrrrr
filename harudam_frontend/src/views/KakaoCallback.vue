@@ -27,7 +27,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:8080/api/auth/oauth/kakao/callback", {
+    const res = await fetch("http://localhost:8081/api/auth/oauth/kakao/callback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, redirectUri, state }),
