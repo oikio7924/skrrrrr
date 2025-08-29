@@ -21,6 +21,7 @@ import Notification from '@/views/Notification.vue'
 import Authentication_code from '@/views/Authentication_code.vue'
 import Signup_Complete from '@/views/Signup_Complete.vue'
 
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -194,6 +195,16 @@ const router = createRouter({
       name: 'VoicePlayer',
       component: () => import('@/views/Voiceplayer.vue'),
     },
+    {
+      path: '/mypage/ChildCharacter',
+      name: 'ChildCharacter',
+      component: () => import('@/views/ChildCharacterSetup.vue')
+    },
+    {
+      path: '/mypage/characterTraining_Child',
+      name: 'CharacterTraining_Child',
+      component: () => import('@/views/CharacterTraining_Child.vue')
+    }
   ],
 
   scrollBehavior() {
