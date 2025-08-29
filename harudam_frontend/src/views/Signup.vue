@@ -10,7 +10,7 @@
 
     <main class="container" role="main" aria-labelledby="title">
       <div class="logo-wrap">
-        <img src="@/assets/harudam_logo.png" alt="하루담 로고" class="logo" />
+        <img src="@/assets/Harudam_logo.png" alt="하루담 로고" class="logo" />
         <p class="logo-text">하루담</p>
       </div>
 

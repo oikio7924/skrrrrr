@@ -112,7 +112,7 @@ const closeEventModal = () => {
 
 const saveEvent = (formData: Omit<EventItem, 'id'>) => {
   let storedEvents: EventItem[] = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-  
+
   if (currentEvent.value.id) {
     const index = storedEvents.findIndex(e => e.id === currentEvent.value.id);
     if (index !== -1) {
@@ -165,7 +165,7 @@ const confirmDelete = () => {
 const loadEvents = () => {
   loading.value = true;
   const storedEvents: EventItem[] = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-  
+
   const grouped: Record<string, EventItem[]> = {};
   storedEvents.forEach(event => {
     if (!grouped[event.date]) {
@@ -173,12 +173,12 @@ const loadEvents = () => {
     }
     grouped[event.date].push(event);
   });
-  
+
   eventsByDate.value = Object.keys(grouped).sort().map(date => ({
     date,
     events: grouped[date]
   }));
-  
+
   loading.value = false;
 };
 

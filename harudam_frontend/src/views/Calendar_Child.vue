@@ -8,13 +8,11 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <h1 class="title">타임라인</h1>
+      <h1 class="title">캘린더</h1>
     </header>
 
-
     <!-- 메인 -->
-    <main class="flex-grow p-4 bg-white rounded-t-3xl -mt-4 overflow-auto relative"
-      :class="viewMode === 'week' ? 'overflow-auto' : 'overflow-hidden'">
+    <main class="flex-grow p-4 bg-white rounded-t-3xl -mt-4 overflow-hidden relative">
       <!-- 월/주 이동 헤더 -->
       <div class="flex items-center justify-between mb-2">
         <button class="text-gray-600 hover:text-gray-900 w-8 h-8" title="이전" @click="goPrev">
@@ -50,36 +48,44 @@
         </div>
 
         <!-- 날짜 그리드 -->
-        <div id="calendar-grid" :key="`${year}-${month}`" class="text-center" :class="{ shifted: viewMode === 'week' }"
-          :style="gridStyle" ref="gridRef">
-          <div v-for="(week, wIdx) in weeks" :key="wIdx" class="week-row" :class="{
-            'hidden-row': viewMode === 'week' && wIdx !== selectedWeekIndex,
-            'above': viewMode === 'week' && wIdx === selectedWeekIndex
-          }" :ref="el => setWeekRef(wIdx, el)">
-            <div v-for="(cell, cIdx) in week" :key="cIdx"
-              class="flex justify-center items-center h-12 cursor-pointer relative" @click="cell && onDateClick(cell)">
+        <div id="calendar-grid">
+          <div v-for="(week, wIdx) in weeks" :key="wIdx" class="week-row"
+            v-show="viewMode !== 'week' || wIdx === selectedWeekIndex">
+            <div v-for="(cell, cIdx) in week" :key="cIdx" class="date-cell flex flex-col items-center justify-start"
+              @click="cell && onDateClick(cell)">
               <template v-if="cell">
-                <div v-if="eventDaysSet.has(cell.key)" class="event-dot"></div>
                 <span class="date-chip"
-                  :class="{ 'selected-badge': isSelected(cell), 'today-ring': isToday(cell) && !isSelected(cell) }">
+                  :class="{ 'selected-badge': isSelected(cell), 'today-ring': isToday(cell) && !isSelected(cell) }"
+                  style="margin-bottom: 0px;">
                   {{ cell.day }}
                 </span>
+                <div class="emotion-sticker" style="margin-top: 2px;">
+                  <img v-if="getStickerForCell(cell)" :src="getStickerForCell(cell) || ''" alt="감정스티커"
+                    class="emotion-sticker-img" />
+                </div>
               </template>
             </div>
           </div>
         </div>
+
+
+
+
       </section>
 
       <!-- 상세 시트 (주간 보기) -->
       <section id="details-view" :class="viewMode === 'week' ? 'sheet-show' : 'sheet-hidden'"
         :style="{ marginTop: detailsMarginTop }">
-
         <!-- 헤더 (날짜 + 되돌아가기 버튼) -->
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-semibold text-gray-800">{{ selectedDateText }}</h3>
+          <!-- 버튼 수정 -->
           <button @click="backToMonth"
             class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-300 bg-white shadow">
-            ←
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
         </div>
 
@@ -101,7 +107,6 @@
 
           <template v-else>
             <div v-for="d in currentPayload.diaries" :key="d.id" class="flex flex-col items-center text-center">
-
               <!-- 이미지 -->
               <div class="w-full max-w-xs h-40 bg-gray-100 rounded-lg overflow-hidden mb-3">
                 <img v-if="d.image" :src="d.image" class="w-full h-full object-cover" />
@@ -116,8 +121,6 @@
           </template>
         </div>
 
-
-
         <!-- 감정 -->
         <div class="detail-section">
           <h4>해당 날짜의 감정</h4>
@@ -129,8 +132,8 @@
           </template>
           <template v-else>
             <div class="flex items-center gap-3">
-              <span class="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100">
-                😊
+              <span class="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100">
+                <img :src="getEmotionStickerSrc(currentPayload.emotion)" alt="감정 이모티콘" class="emotion-sticker-img" />
               </span>
               <span class="font-medium">{{ currentPayload.emotion }}</span>
             </div>
@@ -150,9 +153,7 @@
             </button>
           </template>
         </div>
-
       </section>
-
     </main>
   </div>
 </template>
@@ -162,8 +163,17 @@ defineOptions({ name: 'CalendarChildView' })
 
 import type { ComponentPublicInstance } from 'vue'
 // ✅ [수정] watch 훅을 import 합니다.
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, onBeforeUpdate, watch } from 'vue'
-import { useRouter } from "vue-router"
+import {
+  ref,
+  reactive,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  onBeforeUpdate,
+  watch,
+} from 'vue'
+import { useRouter } from 'vue-router'
 const Logo = 'https://placehold.co/32x32/A78BFA/FFFFFF?text=H'
 
 const router = useRouter()
@@ -171,11 +181,11 @@ const router = useRouter()
 type ViewMode = 'month' | 'week'
 type Diary = { id: string; title: string; content?: string; image?: string }
 type EventItem = { id?: string; time?: string; title: string; type?: string; note?: string }
-type Emotion = 'happy' | 'neutral' | 'sad' | 'angry' | 'anxious' | 'calm' | 'surprised'
+type Emotion = 'happy' | 'neutral' | 'sad' | 'angry' | 'anxious' | 'calm' | 'surprised';
 
 type DayPayload = {
-  diaries: Diary[];
-  events: EventItem[];
+  diaries: Diary[]
+  events: EventItem[]
   emotion?: Emotion
 }
 
@@ -186,7 +196,8 @@ const logoSrc = Logo
 const homeHref = '/main'
 
 const viewMode = ref<ViewMode>('month')
-const currentDate = ref<Date>(new Date()); currentDate.value.setDate(1)
+const currentDate = ref<Date>(new Date())
+currentDate.value.setDate(1)
 const selectedDate = ref<Date | null>(null)
 const selectedWeekIndex = ref<number>(-1)
 const isNavigating = ref(false)
@@ -205,17 +216,18 @@ const weeks = computed<(Cell | null)[][]>(() => {
   const lastDate = new Date(year.value, month.value + 1, 0).getDate()
   const rows: (Cell | null)[][] = []
   let d = 1
+  // 항상 6주를 생성
   for (let r = 0; r < 6; r++) {
     const row: (Cell | null)[] = []
     for (let c = 0; c < 7; c++) {
-      if (r === 0 && c < firstDow) row.push(null)
-      else if (d <= lastDate) {
+      if ((r === 0 && c < firstDow) || d > lastDate) {
+        row.push(null) // 이전 달, 다음 달의 빈 칸
+      } else {
         const dateObj = new Date(year.value, month.value, d)
         row.push({ dateObj, key: toKey(dateObj), day: d })
         d++
-      } else row.push(null)
+      }
     }
-    if (d > lastDate && row.every(cell => cell === null)) continue;
     rows.push(row)
   }
   return rows
@@ -250,29 +262,41 @@ onBeforeUpdate(() => {
 })
 
 type MaybeWithEl = { $el: unknown }
-function isHTMLElement(v: unknown): v is HTMLElement { return v instanceof HTMLElement }
+function isHTMLElement(v: unknown): v is HTMLElement {
+  return v instanceof HTMLElement
+}
 function has$el(v: unknown): v is MaybeWithEl {
   return typeof v === 'object' && v !== null && '$el' in (v as Record<string, unknown>)
 }
 function setWeekRef(index: number, el: Element | ComponentPublicInstance | null) {
   let dom: HTMLElement | null = null
   if (isHTMLElement(el)) dom = el
-  else if (has$el(el) && isHTMLElement((el as MaybeWithEl).$el)) dom = (el as MaybeWithEl).$el as HTMLElement
+  else if (has$el(el) && isHTMLElement((el as MaybeWithEl).$el))
+    dom = (el as MaybeWithEl).$el as HTMLElement
   weekRefs.value[index] = dom
 }
 
-function isSelected(cell: Cell) { return !!selectedDate.value && toKey(selectedDate.value) === cell.key }
+function isSelected(cell: Cell) {
+  return !!selectedDate.value && toKey(selectedDate.value) === cell.key
+}
 function isToday(cell?: Cell | null) {
   if (!cell) return false
   const t = new Date()
-  return cell.dateObj.getFullYear() === t.getFullYear()
-    && cell.dateObj.getMonth() === t.getMonth()
-    && cell.dateObj.getDate() === t.getDate()
+  return (
+    cell.dateObj.getFullYear() === t.getFullYear() &&
+    cell.dateObj.getMonth() === t.getMonth() &&
+    cell.dateObj.getDate() === t.getDate()
+  )
 }
 
 function goToEventsPage() {
   // 라우터 이동 예시
-  router.push('/events')   // 일정 상세 페이지 경로
+  router.push('/events') // 일정 상세 페이지 경로
+}
+
+function goBack() {
+  // 라우터 이동 예시
+  router.push('/main_child') // 일정 상세 페이지 경로
 }
 
 function goBack() {
@@ -287,12 +311,12 @@ function goBack() {
  * 화면 위치를 조정하는 함수
  */
 function adjustWeekPosition() {
-  if (selectedWeekIndex.value === -1 || viewMode.value !== 'week') return;
+  if (selectedWeekIndex.value === -1 || viewMode.value !== 'week') return
 
   const grid = gridRef.value
   const row = weekRefs.value[selectedWeekIndex.value]
 
-  if (!grid || !row) return;
+  if (!grid || !row) return
 
   const rowTop = row.offsetTop
   const rowH = row.offsetHeight
@@ -308,65 +332,72 @@ function adjustWeekPosition() {
 /**
  * selectedDate와 currentDate의 변경을 감지하여 주간 보기 UI를 업데이트하는 Watcher
  */
-watch([selectedDate, currentDate], ([newSelectedDate], [oldSelectedDate]) => {
-  if (viewMode.value !== 'week' || !newSelectedDate) {
-    return;
-  }
-
-  // DOM 업데이트가 완료된 후 실행되도록 보장
-  nextTick(() => {
-    const newKey = toKey(newSelectedDate);
-    const newWeekIndex = weeks.value.findIndex(row => row.some(c => c && c.key === newKey));
-
-    if (newWeekIndex !== -1) {
-      selectedWeekIndex.value = newWeekIndex;
-      adjustWeekPosition();
+watch(
+  [selectedDate, currentDate],
+  ([newSelectedDate], [oldSelectedDate]) => {
+    if (viewMode.value !== 'week' || !newSelectedDate) {
+      return
     }
-  });
-}, { flush: 'post' }); // flush: 'post'는 컴포넌트 업데이트 후에 watcher가 실행되도록 보장
 
+    // DOM 업데이트가 완료된 후 실행되도록 보장
+    nextTick(() => {
+      const newKey = toKey(newSelectedDate)
+      const newWeekIndex = weeks.value.findIndex((row) => row.some((c) => c && c.key === newKey))
+
+      if (newWeekIndex !== -1) {
+        selectedWeekIndex.value = newWeekIndex
+        adjustWeekPosition()
+      }
+    })
+  },
+  { flush: 'post' },
+) // flush: 'post'는 컴포넌트 업데이트 후에 watcher가 실행되도록 보장
 
 /** 이전 버튼 클릭 핸들러 */
 function goPrev() {
-  if (isNavigating.value) return;
-  isNavigating.value = true;
+  if (isNavigating.value) return
+  isNavigating.value = true
 
   if (viewMode.value === 'month') {
-    currentDate.value = new Date(year.value, month.value - 1, 1);
+    currentDate.value = new Date(year.value, month.value - 1, 1)
   } else if (viewMode.value === 'week' && selectedDate.value) {
-    const newDate = new Date(selectedDate.value);
-    newDate.setDate(newDate.getDate() - 7);
+    const newDate = new Date(selectedDate.value)
+    newDate.setDate(newDate.getDate() - 7)
 
     // selectedDate만 변경하면 watch가 나머지를 처리
-    selectedDate.value = newDate;
+    selectedDate.value = newDate
     if (newDate.getMonth() !== month.value) {
-      currentDate.value = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      currentDate.value = new Date(newDate.getFullYear(), newDate.getMonth(), 1)
     }
   }
 
   // 애니메이션 시간 등을 고려하여 짧은 딜레이 후 플래그 해제
-  setTimeout(() => { isNavigating.value = false; }, 100);
+  setTimeout(() => {
+    isNavigating.value = false
+  }, 100)
 }
 
 
 /** 다음 버튼 클릭 핸들러 */
 function goNext() {
-  if (isNavigating.value) return;
-  isNavigating.value = true;
+  if (isNavigating.value) return
+  isNavigating.value = true
 
   if (viewMode.value === 'month') {
-    currentDate.value = new Date(year.value, month.value + 1, 1);
+    currentDate.value = new Date(year.value, month.value + 1, 1)
   } else if (viewMode.value === 'week' && selectedDate.value) {
-    const newDate = new Date(selectedDate.value);
-    newDate.setDate(newDate.getDate() + 7);
+    const newDate = new Date(selectedDate.value)
+    newDate.setDate(newDate.getDate() + 7)
 
     // selectedDate만 변경하면 watch가 나머지를 처리
-    selectedDate.value = newDate;
+    selectedDate.value = newDate
     if (newDate.getMonth() !== month.value) {
-      currentDate.value = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      currentDate.value = new Date(newDate.getFullYear(), newDate.getMonth(), 1)
     }
   }
-  setTimeout(() => { isNavigating.value = false; }, 100);
+  setTimeout(() => {
+    isNavigating.value = false
+  }, 100)
 }
 
 /** 날짜 클릭 핸들러 */
@@ -378,7 +409,9 @@ function onDateClick(cell: Cell) {
 
 // =================================================================
 
-function handleResize() { if (viewMode.value === 'week') adjustWeekPosition() }
+function handleResize() {
+  if (viewMode.value === 'week') adjustWeekPosition()
+}
 
 function backToMonth() {
   viewMode.value = 'month'
@@ -388,7 +421,11 @@ function backToMonth() {
   selectedDate.value = null
 }
 
-function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify(dataByDate)) } catch { } }
+function persist() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(dataByDate))
+  } catch { }
+}
 function restore() {
   try {
     const raw = localStorage.getItem(LS_KEY)
@@ -399,7 +436,40 @@ function restore() {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   restore()
+  // ✅ 감정 데이터 예시 추가
+  Object.assign(dataByDate, {
+    '2025-8-2': { diaries: [], events: [], emotion: 'happy' },
+    '2025-8-5': { diaries: [], events: [], emotion: 'anxious' },
+    '2025-8-13': { diaries: [], events: [], emotion: 'neutral' },
+    '2025-8-16': { diaries: [], events: [], emotion: 'sad' },
+    '2025-8-19': { diaries: [], events: [], emotion: 'surprised' },
+    '2025-8-22': { diaries: [], events: [], emotion: 'angry' },
+    '2025-8-29': { diaries: [], events: [], emotion: 'calm' }
+  });
 })
+
+
+function getEmotionStickerSrc(emotion: Emotion): string {
+  // 파일명 오타/대소문자 주의: 파일명 그대로!
+  const map: Record<Emotion, string> = {
+    happy: 'Happy_emotion.png',
+    sad: 'Sad_emotion.png',
+    angry: 'Angry_emotion.png',
+    neutral: 'Neurtal_emotion.png', // 주의: Neutral 아님, 실제 파일 오타 반영
+    anxious: 'Anxious_emotion.png',
+    calm: 'Calm_emotion.png',
+    surprised: 'Surprized_emotion.png' // Surprized 오타 주의
+  }
+  return new URL(`../assets/emotions/${map[emotion]}`, import.meta.url).href
+}
+
+// 날짜 셀에서 호출 (cell의 감정이 있을 때만)
+function getStickerForCell(cell: Cell): string | null {
+  const d = dataByDate[cell.key]
+  return d && d.emotion ? getEmotionStickerSrc(d.emotion) : null
+}
+
+
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
 })
@@ -416,18 +486,25 @@ body {
 }
 
 main {
-  overflow: hidden;
-  /* ✅ 모달 외부는 스크롤 안되게 */
+  overflow-y: auto;
+  /* 세로 스크롤 허용 */
+  padding-bottom: 50px;
+  /* 푸터와 겹치지 않도록 여백 추가 */
 }
 
-/* ✅ 타임라인 헤더 */
+/* 타임라인 헤더 */
 .timeline-header {
-  position: fixed;   /* sticky → fixed */
+  font-family: 'Noto Sans', sans-serif;
+  /* Noto Sans로 설정 */
+  font-weight: 400;
+  /* 더 얇은 기본 두께 */
+  font-size: 1.5rem;
+  position: fixed;
   top: 0;
-  z-index: 200;      /* 다른 요소 위에 오도록 */
+  z-index: 200;
   display: flex;
   align-items: center;
-  justify-content: center;  /* 중앙 정렬 */
+  justify-content: center;
   width: 100%;
   padding: 0.8rem 1rem;
   background: #fff;
@@ -435,6 +512,7 @@ main {
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
 }
+
 
 .back-btn {
   position: absolute;
@@ -455,13 +533,15 @@ main {
 }
 
 .calendar-root {
+  padding-top: 80px;
+  /* 헤더의 높이를 고려해 달력 위에 여백을 추가 */
   font-family: 'Jua', 'Noto Sans KR', sans-serif;
   font-variant-numeric: tabular-nums;
-  --lav-50: #F5F3FF;
-  --lav-100: #EDE9FE;
-  --lav-200: #DDD6FE;
-  --lav-400: #A78BFA;
-  --lav-500: #8B5CF6;
+  --lav-50: #f5f3ff;
+  --lav-100: #ede9fe;
+  --lav-200: #ddd6fe;
+  --lav-400: #a78bfa;
+  --lav-500: #8b5cf6;
 }
 
 .mobile-screen {
@@ -484,14 +564,17 @@ main {
 
 /* 알림 아이콘 */
 .bell-svg {
-  filter: drop-shadow(0 2px 6px rgba(250, 204, 21, .35));
-  transition: transform .15s ease, filter .2s ease, opacity .2s ease;
+  filter: drop-shadow(0 2px 6px rgba(250, 204, 21, 0.35));
+  transition:
+    transform 0.15s ease,
+    filter 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .bell-svg:hover {
   transform: translateY(-1px);
-  filter: drop-shadow(0 6px 14px rgba(250, 204, 21, .45));
-  opacity: .95;
+  filter: drop-shadow(0 6px 14px rgba(250, 204, 21, 0.45));
+  opacity: 0.95;
 }
 
 /* 달력 카드 */
@@ -499,9 +582,12 @@ main {
   background: linear-gradient(180deg, var(--lav-50) 0%, var(--lav-100) 100%);
   border-radius: 1.25rem;
   border: 1px solid var(--lav-200);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, .10);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   position: relative;
-  padding-bottom: .5rem;
+  padding-bottom: 0.5rem;
+  height: 34rem;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 요일 헤더 */
@@ -509,17 +595,17 @@ main {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: .9rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: #374151;
-  margin-bottom: .5rem !important;
+  margin-bottom: 0.5rem !important;
   border-top-left-radius: 1.25rem;
   border-top-right-radius: 1.25rem;
-  padding: .5rem 0;
-  background: rgba(255, 255, 255, .55);
+  padding: 0.5rem 0;
+  background: rgba(255, 255, 255, 0.55);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .04);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
 }
 
 /* 주 단위 줄 */
@@ -527,7 +613,9 @@ main {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 0.25rem 0;
-  height: 4.2rem;
+  flex-grow: 1;
+  min-height: 4.5rem;
+  /* 3.6~4.2rem 정도로 시도, 필요시 더 높게 */
 }
 
 .week-row.above {
@@ -544,10 +632,11 @@ main {
 #calendar-grid {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
+  gap: 0.4rem;
   position: relative;
-  transition: transform .35s ease;
+  transition: transform 0.35s ease;
   will-change: transform;
+  flex-grow: 1;
 }
 
 #calendar-grid.shifted {
@@ -558,25 +647,37 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  margin: 0 auto 0.3rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 8px;
   font-size: 1rem;
   border-radius: 9999px;
   font-weight: 600;
   color: #111827;
 }
 
+.date-cell {
+  display: flex;
+  flex-direction: column;
+  /* 세로 쌓기 */
+  align-items: center;
+  /* 가운데 정렬 */
+  justify-content: flex-start;
+  height: 3.3rem;
+  /* 높이 충분히 부여 */
+  min-height: 4.1rem;
+}
+
 #calendar-grid .selected-badge {
-  background-color: #2563eb;
+  background-color: #6d28d9;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, .35);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
 }
 
 .today-ring {
-  outline: 2px solid rgba(16, 185, 129, .55);
-  outline-offset: 2px;
-  border-radius: 9999px;
+  outline: 3px solid rgba(33, 34, 37, 0.55);
+  outline-offset: 0.5px;
+  border-radius: 100000000px;
 }
 
 #calendar-grid .event-dot {
@@ -588,27 +689,32 @@ main {
   height: 6px;
   border-radius: 9999px;
   background: linear-gradient(180deg, var(--lav-400), var(--lav-500));
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
   z-index: 0;
 }
 
 /* 상세 시트 */
 
 #details-view {
-  flex: 1 1 auto;
-  /* ✅ flexbox 내부에서 영역 확보 */
-  min-height: 65vh;
-  max-height: 80vh;
+  position: fixed;
+  top: 29%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 하단에서 올라오는 시트 */
+  z-index: 300;
+  /* 헤더보다 위 */
+  flex: none;
+  /* flex 영향 안 받도록 */
+  min-height: 60vh;
+  max-height: 85vh;
   overflow-y: auto;
-  /* ✅ 모달 내부만 스크롤 */
   background: #fff;
   border-radius: 1.25rem 1.25rem 0 0;
   border-top: 2px solid #e5e7eb;
-  box-shadow: 0 -6px 18px rgba(0, 0, 0, .1);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.15);
   padding: 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .sheet-hidden {
@@ -623,6 +729,12 @@ main {
   transform: translateY(0);
 }
 
+/* 폰트 변경 예시 */
+body {
+  font-family: 'Noto Sans', sans-serif;
+  /* Noto Sans는 부드럽고 가독성이 좋은 서체 */
+}
+
 /* 상세 시트 내 박스 */
 .detail-section {
   border-radius: 0.75rem;
@@ -634,13 +746,33 @@ main {
 
 .detail-section h4 {
   font-weight: 600;
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
 }
 
 .detail-section.diary {
   min-height: 140px;
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: 0.5rem;
+}
+
+/* 감정 스티커 */
+.emotion-sticker {
+  margin-top: 2px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  /* 날짜 칩과 같은 크기 등 중앙 정렬 보장 */
+  min-height: 1.2rem;
+}
+
+.emotion-sticker-img {
+  width: 30px;
+  height: 30px;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
 }
 </style>

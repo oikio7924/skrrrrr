@@ -4,7 +4,7 @@
     <header class="mypage-header">
       <!-- 로고+텍스트 전체를 클릭 가능하게 -->
       <div class="logo" @click="goHome">
-        <img src="@/assets/harudam_logo.png" alt="하루담 로고" />
+        <img src="@/assets/Harudam_logo.png" alt="하루담 로고" />
         <span class="logo-text">하루담</span>
       </div>
 
