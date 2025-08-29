@@ -4,7 +4,7 @@
 
       <!-- 로고 -->
       <header class="py-10 md:py-10 flex justify-center">
-        <img :src="logoUrl" alt="하루담 로고" class="h-28 sm:h-32 md:h-40 object-contain" @error="onLogoError" />
+        <img :src="logoUrl" alt="하루담 로고" class="h-[10rem] sm:h-32 md:h-40 object-contain" @error="onLogoError" />
       </header>
 
       <!-- 본문 -->
