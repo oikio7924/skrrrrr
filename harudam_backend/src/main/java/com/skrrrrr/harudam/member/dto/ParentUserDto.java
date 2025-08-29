@@ -15,7 +15,11 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PresentUserDto {
+public class ParentUserDto {
+    public ParentUserDto(String valueOf, String name2, String phone2, Object object, String addr12, String addr22,
+            Object object2, String pictureUrl2) {
+        //TODO Auto-generated constructor stub
+    }
     private Long id;
     private String name;
     private Gender gender;
@@ -24,4 +28,5 @@ public class PresentUserDto {
     private String pictureUrl; // ✅ 엔티티 기준
     private String addr1;
     private String addr2;
+    private String voiceUrl;
 }

@@ -17,4 +17,6 @@ public interface ParentChildLinkRepository extends JpaRepository<ParentChildLink
      * ✅ 특정 부모-자녀 관계 존재 여부 확인
      */
     boolean existsByParentUser_IdAndChildUser_Id(Long parentId, Long childId);
+    
+    
 }
