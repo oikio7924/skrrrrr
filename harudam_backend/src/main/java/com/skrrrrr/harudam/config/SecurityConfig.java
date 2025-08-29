@@ -40,6 +40,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 // ✅ 테스트용
                 .requestMatchers("/api/test/**").permitAll()
+                // 파일 업로드용
+                .requestMatchers("/api/files/**").permitAll()
                 // ✅ 휴대폰 인증 (childId 있는 경우/없는 경우 모두 허용)
                 .requestMatchers("/api/verification/**").permitAll()
                 

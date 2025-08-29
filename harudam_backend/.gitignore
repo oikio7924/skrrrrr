@@ -36,3 +36,4 @@ build/
 application.properties
 .metadata/
 harudam_workspace.code-workspace
+/uploads

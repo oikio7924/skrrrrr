@@ -2,7 +2,7 @@
 
 // 카카오 SDK에서 실제로 사용하는 메서드만 "최소" 타입으로 선언
 export interface KakaoAuthResponse {
-  access_token: string;
+  accessToken: string;
   expires_in: number;
   refresh_token: string;
   refresh_token_expires_in: number;
