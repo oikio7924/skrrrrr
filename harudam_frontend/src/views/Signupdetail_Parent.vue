@@ -141,9 +141,12 @@
 import { reactive, computed, ref, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router' // ✅ useRoute 추가
 import { sendParentCode, verifyParentCode } from '@/api/verification'
+import http from '@/api/http'
 
 const router = useRouter()
 const route = useRoute()
+
+const phoneDigits = computed(() => form.phone.replace(/\D/g, ''))
 
 const childIdForVerification = computed(() =>
   Number(route.params.childId || localStorage.getItem('childId') || 0)
@@ -356,12 +359,43 @@ function removePhoto() {
 
 // 최종 제출
 async function onSubmit() {
+  if (!valid.name)         { touched.name = true;  alert('이름을 확인해주세요.'); return }
+  if (!valid.phone)        { touched.phone = true; alert('휴대폰 번호를 확인해주세요.'); return }
+  if (!codeVerified.value) { alert('휴대폰 인증을 먼저 완료해주세요.'); return }
+  if (!valid.birth)        { touched.birth = true; alert('생년월일을 선택해주세요.'); return }
+  if (!valid.gender)       { touched.gender = true; alert('성별을 선택해주세요.'); return }
+
   submitting.value = true
   try {
-    // TODO: 실제 회원가입 API 호출
-    await new Promise<void>(r => setTimeout(r, 600))
+    // 1) 부모 정보 먼저 저장 → parentId를 백엔드가 내려주도록 수정 필요
+    const baseBody = {
+      name:   form.name,
+      gender: form.gender,
+      birth:  form.birth,
+      phone:  phoneDigits.value,
+      addr1:  form.addr1 || '',
+      addr2:  form.addr2 || '',
+      // pictureUrl 은 아직 비움
+    }
+    const created = await http.post('/api/verification/finalize-parent', baseBody)
+    const parentId = created.data.parentId   // ← 백엔드 수정 포인트
+
+    // 2) 사진 있으면 업로드
+    if (form.photo) {
+      const fd = new FormData()
+      fd.append('file', form.photo)
+      const up = await http.post(`/api/files/parent/${parentId}/picture`, fd)
+      const pictureUrl = up.data.path
+
+      // 3) pictureUrl 반영 (PATCH 엔드포인트 필요)
+      await http.patch(`/api/parent/${parentId}`, { pictureUrl })
+    }
+
     alert('회원가입이 완료되었습니다.')
     router.push({ name: 'signupcomplete' })
+  } catch (e: any) {
+    console.error(e)
+    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
   } finally {
     submitting.value = false
   }
