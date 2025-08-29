@@ -70,24 +70,23 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(child);
         String refreshToken = jwtTokenProvider.createRefreshToken(child);
 
-        ChildUserDto childDto = new ChildUserDto(
-                child.getId(),
-                child.getUserId(),
-                child.getName(),
-                child.getGender(),
-                child.getBirth(),
-                child.getPhone(),
-                child.getPictureUrl(),
-                child.getVoiceUrl(),
-                child.getState()
-        );
+        ChildUserDto dto = new ChildUserDto();
+        dto.setId(child.getId());
+        dto.setUserId(child.getUserId());
+        dto.setName(child.getName());
+        dto.setGender(child.getGender());
+        dto.setBirth(child.getBirth());
+        dto.setPhone(child.getPhone());
+        dto.setPictureUrl(child.getPictureUrl());
+        dto.setVoiceUrl(child.getVoiceUrl());
+        dto.setState(child.getState());
 
         return new TokenDto(
                 accessToken,
                 refreshToken,
                 3600L,
                 UserType.CHILD,
-                childDto
+                dto
         );
     }
 
@@ -110,24 +109,23 @@ public class AuthService {
         String accessToken = jwtTokenProvider.createAccessToken(child);
         String refreshToken = jwtTokenProvider.createRefreshToken(child);
 
-        ChildUserDto childDto = new ChildUserDto(
-                child.getId(),
-                child.getUserId(),
-                child.getName(),
-                child.getGender(),
-                child.getBirth(),
-                child.getPhone(),
-                child.getPictureUrl(),
-                child.getVoiceUrl(),
-                child.getState()
-        );
+        ChildUserDto dto = new ChildUserDto();
+        dto.setId(child.getId());
+        dto.setUserId(child.getUserId());
+        dto.setName(child.getName());
+        dto.setGender(child.getGender());
+        dto.setBirth(child.getBirth());
+        dto.setPhone(child.getPhone());
+        dto.setPictureUrl(child.getPictureUrl());
+        dto.setVoiceUrl(child.getVoiceUrl());
+        dto.setState(child.getState());
 
         return new TokenDto(
                 accessToken,
                 refreshToken,
                 3600L,
                 UserType.CHILD,
-                childDto
+                dto
         );
     }
 
@@ -178,24 +176,23 @@ public class AuthService {
             String newAccessToken = jwtTokenProvider.createAccessToken(child);
             String newRefreshToken = jwtTokenProvider.createRefreshToken(child);
 
-            ChildUserDto childDto = new ChildUserDto(
-                    child.getId(),
-                    child.getUserId(),
-                    child.getName(),
-                    child.getGender(),
-                    child.getBirth(),
-                    child.getPhone(),
-                    child.getPictureUrl(),
-                    child.getVoiceUrl(),
-                    child.getState()
-            );
+        ChildUserDto dto = new ChildUserDto();
+        dto.setId(child.getId());
+        dto.setUserId(child.getUserId());
+        dto.setName(child.getName());
+        dto.setGender(child.getGender());
+        dto.setBirth(child.getBirth());
+        dto.setPhone(child.getPhone());
+        dto.setPictureUrl(child.getPictureUrl());
+        dto.setVoiceUrl(child.getVoiceUrl());
+        dto.setState(child.getState());
 
             return new TokenDto(
                     newAccessToken,
                     newRefreshToken,
                     3600L,
                     UserType.CHILD,
-                    childDto
+                    dto
             );
         } else if ("PARENT".equals(userType)) {
             ParentUser parent = parentUserRepository.findById(userId)

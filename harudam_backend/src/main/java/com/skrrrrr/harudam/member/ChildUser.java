@@ -2,6 +2,7 @@ package com.skrrrrr.harudam.member;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -60,6 +61,13 @@ public class ChildUser {
     @Column(length = 500)
     private String aiVoicePath;
 
+    @OneToMany(mappedBy = "childUser")
+    private List<ParentChildLink> parentLinks;
+    
+    public ParentUser getParentUser() {
+    	return parentLinks.isEmpty() ? null : parentLinks.get(0).getParentUser();
+    }
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserState state = UserState.PENDING;
