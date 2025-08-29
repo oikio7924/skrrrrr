@@ -39,9 +39,6 @@ export default [
       },
     },
   },
-
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
-
   // Vue 권장 규칙
   ...pluginVue.configs["flat/recommended"],
 
