@@ -356,48 +356,55 @@ function removePhoto() {
 }
 
 
-
-// 최종 제출
+// 최종 제출 (수정 제안)
+// 최종 제출 함수
 async function onSubmit() {
-  if (!valid.name)         { touched.name = true;  alert('이름을 확인해주세요.'); return }
-  if (!valid.phone)        { touched.phone = true; alert('휴대폰 번호를 확인해주세요.'); return }
+  // 1. 유효성 검사 (기존 코드와 동일)
+  if (!valid.name) { touched.name = true; alert('이름을 확인해주세요.'); return }
+  if (!valid.phone) { touched.phone = true; alert('휴대폰 번호를 확인해주세요.'); return }
   if (!codeVerified.value) { alert('휴대폰 인증을 먼저 완료해주세요.'); return }
-  if (!valid.birth)        { touched.birth = true; alert('생년월일을 선택해주세요.'); return }
-  if (!valid.gender)       { touched.gender = true; alert('성별을 선택해주세요.'); return }
+  if (!valid.birth) { touched.birth = true; alert('생년월일을 선택해주세요.'); return }
+  if (!valid.gender) { touched.gender = true; alert('성별을 선택해주세요.'); return }
 
   submitting.value = true
   try {
-    // 1) 부모 정보 먼저 저장 → parentId를 백엔드가 내려주도록 수정 필요
-    const baseBody = {
-      name:   form.name,
-      gender: form.gender,
-      birth:  form.birth,
-      phone:  phoneDigits.value,
-      addr1:  form.addr1 || '',
-      addr2:  form.addr2 || '',
-      // pictureUrl 은 아직 비움
-    }
-    const created = await http.post('/api/verification/finalize-parent', baseBody)
-    const parentId = created.data.parentId   // ← 백엔드 수정 포인트
+    // 2. 파일과 JSON 데이터를 한 번에 보낼 FormData 객체 생성
+    const formData = new FormData();
 
-    // 2) 사진 있으면 업로드
+    // 3. 사진 파일이 있다면 'file'이라는 키로 FormData에 추가
     if (form.photo) {
-      const fd = new FormData()
-      fd.append('file', form.photo)
-      const up = await http.post(`/api/files/parent/${parentId}/picture`, fd)
-      const pictureUrl = up.data.path
-
-      // 3) pictureUrl 반영 (PATCH 엔드포인트 필요)
-      await http.patch(`/api/parent/${parentId}`, { pictureUrl })
+      formData.append('file', form.photo);
     }
 
-    alert('회원가입이 완료되었습니다.')
-    router.push({ name: 'signupcomplete' })
+    // 4. 나머지 JSON 데이터를 'requestDto'라는 키로 FormData에 추가
+    const genderMap: Record<'M' | 'F', 'MALE' | 'FEMALE'> = { M: 'MALE', F: 'FEMALE' };
+    const requestDto = {
+      name: form.name,
+      gender: genderMap[form.gender as 'M' | 'F'],
+      birth: form.birth,
+      phone: phoneDigits.value,
+      addr1: form.addr1 || '',
+      addr2: form.addr2 || '',
+      childId: childIdForVerification.value
+    };
+    // DTO 객체를 JSON 문자열로 변환 후 Blob 객체로 감싸서 추가
+    formData.append('requestDto', new Blob([JSON.stringify(requestDto)], { type: "application/json" }));
+
+    // 5. 단 한 번의 API 호출로 모든 데이터를 전송
+    const { data } = await http.post('/api/parent/signup', formData);
+
+    if (data.success) {
+      alert('회원가입이 완료되었습니다.');
+      router.push({ name: 'signupcomplete' });
+    } else {
+      alert(data.message || '회원가입에 실패했습니다.');
+    }
+
   } catch (e: any) {
-    console.error(e)
-    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
+    console.error(e);
+    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.');
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 
