@@ -299,9 +299,6 @@ function goBack() {
   router.push('/main_child') // 일정 상세 페이지 경로
 }
 
-function goBack() {
-  router.push('main_child')
-}
 
 // =================================================================
 // ✅ [수정된 핵심 로직]
