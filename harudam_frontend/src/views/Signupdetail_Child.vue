@@ -217,8 +217,8 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import http from '@/api/http'
 import { uploadChildPicture, uploadChildVoice } from '@/api/files'
+import http from '@/api/http';
 const router = useRouter()
 
 const route = useRoute()
@@ -285,39 +285,30 @@ async function sendSMS() {
     return;
   }
 
-  // ▼▼▼ 이 부분이 중요합니다 ▼▼▼
+  // 백엔드로 보낼 데이터 (payload)
   const payload = {
     childId: childIdForVerification.value,
     phone: phoneDigits.value
   };
-  console.log("백엔드로 전송하는 데이터:", payload); // ◀◀ 이 로그를 확인할 것입니다!
-  // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
   try {
-    const res = await fetch("http://localhost:8080/api/verification/send-child", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    // fetch 대신 http.post를 사용합니다.
+    // http 인스턴스가 .env 파일에 설정된 baseURL('http://localhost:8081')을 자동으로 붙여줍니다.
+    const { data } = await http.post('/api/verification/send-child', payload);
 
-    if (!res.ok) {
-      throw new Error(`서버 응답 오류: ${res.status}`);
-    }
-
-    const responseData = await res.json();
-
-    if (responseData.success) {
+    if (data.success) {
       smsInfo.value = '인증번호를 전송했습니다. 3분 이내에 입력해 주세요.';
-      alert(responseData.message || '인증번호를 전송했습니다.');
+      alert(data.message || '인증번호를 전송했습니다.');
     } else {
-      alert(responseData.message || '인증번호 전송에 실패했습니다.');
+      alert(data.message || '인증번호 전송에 실패했습니다.');
     }
 
   } catch (e: any) {
     console.error("인증번호 전송 함수 오류:", e);
-    alert('인증번호 전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    alert(e?.response?.data?.message || '인증번호 전송 중 오류가 발생했습니다.');
   }
 }
+
 /**
  * @function verifySMS
  * '인증확인' 버튼 클릭 시 실행됩니다.
@@ -329,11 +320,16 @@ async function verifySMS() {
     alert('6자리 인증번호를 입력해주세요.');
     return;
   }
+
+  // 백엔드로 보낼 데이터 (payload)
+  const payload = {
+    phone: phoneDigits.value,
+    code: String(form.smsCode)
+  };
+
   try {
-    const { data } = await http.post('/api/verification/verify-child', {
-      phone: phoneDigits.value,
-      code: String(form.smsCode)
-    }); // data = ApiResponse
+    // http.post를 사용하면 baseURL('http://localhost:8081')이 자동으로 적용됩니다.
+    const { data } = await http.post('/api/verification/verify-child', payload);
 
     if (data?.success) {
       form.phoneVerified = true;
@@ -346,7 +342,7 @@ async function verifySMS() {
     }
   } catch (e: any) {
     form.phoneVerified = false;
-    console.error(e);
+    console.error("인증 확인 함수 오류:", e);
     alert(e?.response?.data?.message || '인증 처리 중 오류가 발생했습니다.');
   }
 }
@@ -498,10 +494,12 @@ const allAgreed = computed({
 /* ─────────────────────────────
  * 제출
  * ────────────────────────────*/
+// submit 함수 전체를 아래 코드로 바꿔보세요.
+
 async function submit() {
-  // 1) 클라이언트 검증 (그대로 유지)
+  // 1) 클라이언트 검증 (기존과 동일)
   if (!form.email) { alert('아이디(이메일)를 입력해주세요.'); return }
-  if (!passwordsOk.value) { alert('비밀번호를 확인해주세요. (입력 및 일치 여부)'); return }
+  if (!passwordsOk.value) { alert('비밀번호를 확인해주세요.'); return }
   if (!form.name) { alert('이름을 입력해주세요.'); return }
   if (!form.birthday) { alert('생년월일을 입력해주세요.'); return }
   if (!form.gender) { alert('성별을 선택해주세요.'); return }
@@ -510,47 +508,53 @@ async function submit() {
   if (!requiredAgreed.value) { alert('필수 약관에 동의해주세요.'); return }
 
   try {
-    // 2) 파일 업로드 → URL 확보
-    let pictureUrl = ''
-    let voiceUrl = ''
+    // 2) 파일과 JSON 데이터를 한 번에 보낼 FormData 생성
+    const formData = new FormData();
 
+    // 3) 파일 추가
     if (form.childPhoto) {
-      pictureUrl = await uploadChildPicture(childIdForVerification.value, form.childPhoto)
+      formData.append('pictureFile', form.childPhoto);
     }
-    // submit() 내부
     if (form.childVoice) {
-      const voiceFile = new File([form.childVoice], 'voice.wav', { type: 'audio/wav' })
-      voiceUrl = await uploadChildVoice(childIdForVerification.value, voiceFile)
+      const voiceFile = new File([form.childVoice], 'voice.wav', { type: 'audio/wav' });
+      formData.append('voiceFile', voiceFile);
     }
 
-
-    // 3) 백엔드 finalize DTO와 동일한 키로 전송
-    const body = {
-      childId: childIdForVerification.value, // ✅ 추가
+    // 4) 나머지 JSON 데이터 추가
+    const genderMap: Record<'M' | 'F', 'MALE' | 'FEMALE'> = { M: 'MALE', F: 'FEMALE' };
+    const signupDto = {
+      userId: form.email,
+      password: form.password || '',
+      name: form.name,
+      gender: genderMap[form.gender],
+      birth: form.birthday,
       phone: phoneDigits.value,
-      birth: form.birthday,                // ✅ (birthday → birth)
-      gender: form.gender,
-      addr1: form.address || '',           // ✅ (address → addr1)
-      addr2: form.addressDetail || '',     // ✅ (addressDetail → addr2)
-      pictureUrl,                                  // ✅ 업로드 결과
-      voiceUrl,
-    }
+      addr1: form.address || '',
+      addr2: form.addressDetail || '',
+    };
+    // DTO 객체를 'signupData'라는 이름의 Blob(덩어리)으로 변환하여 추가
+    formData.append('signupData', new Blob([JSON.stringify(signupDto)], { type: "application/json" }));
 
-    // ⚠️ 컨트롤러 매핑에 맞춰 경로 확인!
-    // 예) /api/verification/finalize-child  혹은 /api/signup/child/finalize
-    const { data } = await http.post('/api/verification/finalize-child', body)
+    // 5) 단 한 번의 API 호출로 모든 데이터 전송
+    const { data } = await http.post('/api/child/signup-with-files', formData, {
+      headers: {
+        // FormData를 보낼 때는 Content-Type을 설정하지 않아도 브라우저가 자동으로 'multipart/form-data'로 지정해줍니다.
+      },
+    });
 
     if (data?.success) {
-      alert('회원가입이 완료되었습니다.')
-      router.push({ name: 'signupcomplete' })
+      alert('회원가입이 완료되었습니다.');
+      router.push({ name: 'signupcomplete' });
     } else {
-      alert(data?.message || '회원가입에 실패했습니다.')
+      alert(data?.message || '회원가입에 실패했습니다.');
     }
   } catch (e: any) {
-    console.error(e)
-    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
+    console.error(e);
+    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.');
   }
 }
+
+
 
 
 </script>
