@@ -218,6 +218,7 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import http from '@/api/http'
+import { uploadChildPicture, uploadChildVoice } from '@/api/files'
 const router = useRouter()
 
 const route = useRoute()
@@ -462,11 +463,26 @@ function handleAddressSearch() {
   }
 }
 
-function submit() { if (!form.email) { alert('아이디(이메일)를 입력해주세요.'); return; } if (!passwordsOk.value) { alert('비밀번호를 확인해주세요. (입력 및 일치 여부)'); return; } if (!form.name) { alert('이름을 입력해주세요.'); return; } if (!form.birthday) { alert('생년월일을 입력해주세요.'); return; } if (!form.gender) { alert('성별을 선택해주세요.'); return; } if (!phoneValid.value) { alert('올바른 휴대폰 번호를 입력해주세요.'); return; } if (!form.phoneVerified) { alert('휴대폰 인증을 완료해주세요.'); return; } if (!requiredAgreed.value) { alert('필수 약관에 동의해주세요.'); return; } const payload = { ...form, agreements: { ...agreements } }; console.log('submit payload', payload); alert(' 부모정보 입력 화면으로 이동합니다.'); router.push({ name: 'Signupdetail_parent' }) }
-function removePhoto() { form.childPhoto = null; photoPreviewUrl.value = null }
-function removeRecording() { form.childVoice = null; recordedAudioUrl.value = null }
-const passwordsOk = computed(() => !!form.password && form.password === form.passwordConfirm)
-const requiredAgreed = computed(() => agreements.termsRequired && agreements.privacyRequired)
+/* ─────────────────────────────
+ * 비밀번호 일치 여부
+ * ────────────────────────────*/
+const passwordsOk = computed(() =>
+  !!form.password && form.password === form.passwordConfirm
+)
+
+
+const agreements = reactive({
+  termsRequired: false,
+  privacyRequired: false,
+  marketingOptional: false,
+})
+
+/** ✅ 필수 약관 모두 동의 여부 */
+const requiredAgreed = computed(
+  () => agreements.termsRequired && agreements.privacyRequired
+)
+
+/** ✅ "모두 동의" 토글용 (템플릿 v-model="allAgreed") */
 const allAgreed = computed({
   get: () =>
     agreements.termsRequired &&
