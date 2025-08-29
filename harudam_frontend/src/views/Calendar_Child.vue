@@ -275,6 +275,10 @@ function goToEventsPage() {
   router.push('/events')   // 일정 상세 페이지 경로
 }
 
+function goBack() {
+  router.push('main_child')
+}
+
 // =================================================================
 // ✅ [수정된 핵심 로직]
 // =================================================================
@@ -343,6 +347,7 @@ function goPrev() {
   // 애니메이션 시간 등을 고려하여 짧은 딜레이 후 플래그 해제
   setTimeout(() => { isNavigating.value = false; }, 100);
 }
+
 
 /** 다음 버튼 클릭 핸들러 */
 function goNext() {
