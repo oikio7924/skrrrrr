@@ -217,8 +217,9 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { sendChildCode, verifyChildCode } from '@/api/verification'
 import http from '@/api/http'
+import { uploadChildPicture, uploadChildVoice } from '@/api/files'
+
 const router = useRouter()
 
 const route = useRoute()
@@ -251,12 +252,6 @@ const form = reactive({
 const phoneDigits = computed(() => form.phone.replace(/\D/g, ''))
 const phoneValid = computed(() => /^\d{10,11}$/.test(phoneDigits.value))
 
-
-const agreements = reactive({
-  termsRequired: false,
-  privacyRequired: false,
-  marketingOptional: false,
-})
 const showPw = ref(false)
 const showPw2 = ref(false)
 const smsInfo = ref('')
@@ -293,8 +288,8 @@ async function sendSMS() {
 
   // ▼▼▼ 이 부분이 중요합니다 ▼▼▼
   const payload = {
-      childId: childIdForVerification.value,
-      phone: phoneDigits.value
+    childId: childIdForVerification.value,
+    phone: phoneDigits.value
   };
   console.log("백엔드로 전송하는 데이터:", payload); // ◀◀ 이 로그를 확인할 것입니다!
   // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
@@ -358,45 +353,205 @@ async function verifySMS() {
 }
 
 
-// --- 나머지 함수들은 기존 코드와 동일하게 유지 ---
-onMounted(() => { if (prefilled.email) form.email = prefilled.email; if (prefilled.name) form.name = prefilled.name })
-function goBack() { if (history.length > 1) router.back(); else router.push('/') }
-function checkEmail() { alert(`(예시) ${form.email} 사용 가능 여부 확인`) }
-function handlePhotoUpload(event: Event) { const target = event.target as HTMLInputElement; const file = target.files?.[0]; if (file) { form.childPhoto = file; photoPreviewUrl.value = URL.createObjectURL(file) } }
+/* ─────────────────────────────
+ * Lifecycle & Navigation
+ * ────────────────────────────*/
+onMounted(() => {
+  if (prefilled.email) form.email = prefilled.email
+  if (prefilled.name) form.name = prefilled.name
+})
+
+function goBack() {
+  if (history.length > 1) router.back()
+  else router.push('/')
+}
+
+function checkEmail() {
+  alert(`(예시) ${form.email} 사용 가능 여부 확인`)
+}
+
+/* ─────────────────────────────
+ * File (사진) 업로드
+ * ────────────────────────────*/
+function handlePhotoUpload(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  form.childPhoto = file
+  photoPreviewUrl.value = URL.createObjectURL(file)
+}
+
+function removePhoto() {
+  form.childPhoto = null
+  if (photoPreviewUrl.value) URL.revokeObjectURL(photoPreviewUrl.value)
+  photoPreviewUrl.value = null
+}
+
+/* ─────────────────────────────
+ * 음성 녹음
+ * ────────────────────────────*/
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
-async function startRecording() { try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); mediaRecorder.ondataavailable = (event) => { audioChunks.push(event.data) }; mediaRecorder.onstop = () => { const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); form.childVoice = audioBlob; recordedAudioUrl.value = URL.createObjectURL(audioBlob); audioChunks = [] }; mediaRecorder.start(); isRecording.value = true } catch (err) { console.error("마이크 접근 오류:", err); alert("마이크를 사용할 수 없습니다. 브라우저의 마이크 접근 권한을 확인해주세요.") } }
-function stopRecording() { if (mediaRecorder) { mediaRecorder.stop(); isRecording.value = false } }
-function resetRecording() { recordedAudioUrl.value = null; form.childVoice = null }
-function openPolicy(kind: 'terms' | 'privacy' | 'marketing') { alert(`(예시) ${kind} 약관 모달/페이지로 이동`) }
-interface DaumPostcodeData { roadAddress: string; jibunAddress: string; userSelectedType: 'R' | 'J'; }
-interface DaumPostcode { open(): void; }
-interface Daum { Postcode: new (options: { oncomplete: (data: DaumPostcodeData) => void; }) => DaumPostcode; }
-declare global { interface Window { daum?: Daum; } }
-function execDaumPostcode() { new window.daum!.Postcode({ oncomplete: (data: DaumPostcodeData) => { form.address = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress } }).open() }
-function handleAddressSearch() {
-  if (window.daum && window.daum.Postcode) execDaumPostcode();
-  else {
-    const script = document.createElement('script');
-    script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'; // ← https 고정
-    script.onload = () => execDaumPostcode();
-    document.head.appendChild(script)
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    mediaRecorder = new MediaRecorder(stream)
+    mediaRecorder.ondataavailable = ev => audioChunks.push(ev.data)
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
+      form.childVoice = audioBlob
+      recordedAudioUrl.value = URL.createObjectURL(audioBlob)
+      audioChunks = []
+    }
+    mediaRecorder.start()
+    isRecording.value = true
+  } catch (err) {
+    console.error('마이크 접근 오류:', err)
+    alert('마이크를 사용할 수 없습니다. 브라우저의 마이크 권한을 확인해주세요.')
   }
 }
 
-function submit() { if (!form.email) { alert('아이디(이메일)를 입력해주세요.'); return; } if (!passwordsOk.value) { alert('비밀번호를 확인해주세요. (입력 및 일치 여부)'); return; } if (!form.name) { alert('이름을 입력해주세요.'); return; } if (!form.birthday) { alert('생년월일을 입력해주세요.'); return; } if (!form.gender) { alert('성별을 선택해주세요.'); return; } if (!phoneValid.value) { alert('올바른 휴대폰 번호를 입력해주세요.'); return; } if (!form.phoneVerified) { alert('휴대폰 인증을 완료해주세요.'); return; } if (!requiredAgreed.value) { alert('필수 약관에 동의해주세요.'); return; } const payload = { ...form, agreements: { ...agreements } }; console.log('submit payload', payload); alert(' 부모정보 입력 화면으로 이동합니다.'); router.push({ name: 'Signupdetail_parent' }) }
-function removePhoto() { form.childPhoto = null; photoPreviewUrl.value = null }
-function removeRecording() { form.childVoice = null; recordedAudioUrl.value = null }
-const passwordsOk = computed(() => !!form.password && form.password === form.passwordConfirm)
-const requiredAgreed = computed(() => agreements.termsRequired && agreements.privacyRequired)
+function stopRecording() {
+  if (!mediaRecorder) return
+  mediaRecorder.stop()
+  isRecording.value = false
+}
+
+function resetRecording() {
+  recordedAudioUrl.value = null
+  form.childVoice = null
+}
+
+function removeRecording() {
+  resetRecording()
+}
+
+/* ─────────────────────────────
+ * 약관 / 정책
+ * ────────────────────────────*/
+function openPolicy(kind: 'terms' | 'privacy' | 'marketing') {
+  alert(`(예시) ${kind} 약관 모달/페이지로 이동`)
+}
+
+/* ─────────────────────────────
+ * 주소 검색 (Daum)
+ * ────────────────────────────*/
+interface DaumPostcodeData {
+  roadAddress: string
+  jibunAddress: string
+  userSelectedType: 'R' | 'J'
+}
+interface DaumPostcode { open(): void }
+interface Daum { Postcode: new (opts: { oncomplete: (data: DaumPostcodeData) => void }) => DaumPostcode }
+declare global { interface Window { daum?: Daum } }
+
+function execDaumPostcode() {
+  new window.daum!.Postcode({
+    oncomplete: (data: DaumPostcodeData) => {
+      form.address = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress
+    }
+  }).open()
+}
+
+function handleAddressSearch() {
+  if (window.daum?.Postcode) { execDaumPostcode(); return }
+  const script = document.createElement('script')
+  script.src = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js'
+  script.onload = () => execDaumPostcode()
+  document.head.appendChild(script)
+}
+
+/* ─────────────────────────────
+ * 비밀번호 일치 여부
+ * ────────────────────────────*/
+const passwordsOk = computed(() =>
+  !!form.password && form.password === form.passwordConfirm
+)
+
+
+const agreements = reactive({
+  termsRequired: false,
+  privacyRequired: false,
+  marketingOptional: false,
+})
+
+/** ✅ 필수 약관 모두 동의 여부 */
+const requiredAgreed = computed(
+  () => agreements.termsRequired && agreements.privacyRequired
+)
+
+/** ✅ "모두 동의" 토글용 (템플릿 v-model="allAgreed") */
 const allAgreed = computed({
-  get: () => requiredAgreed.value && agreements.marketingOptional,
-  set: (val: boolean) => {
-    agreements.termsRequired = val
-    agreements.privacyRequired = val
-    agreements.marketingOptional = val
+  get: () =>
+    agreements.termsRequired &&
+    agreements.privacyRequired &&
+    agreements.marketingOptional,
+  set: (v: boolean) => {
+    agreements.termsRequired = v
+    agreements.privacyRequired = v
+    agreements.marketingOptional = v
   },
 })
+
+/* ─────────────────────────────
+ * 제출
+ * ────────────────────────────*/
+async function submit() {
+  // 1) 클라이언트 검증 (그대로 유지)
+  if (!form.email) { alert('아이디(이메일)를 입력해주세요.'); return }
+  if (!passwordsOk.value) { alert('비밀번호를 확인해주세요. (입력 및 일치 여부)'); return }
+  if (!form.name) { alert('이름을 입력해주세요.'); return }
+  if (!form.birthday) { alert('생년월일을 입력해주세요.'); return }
+  if (!form.gender) { alert('성별을 선택해주세요.'); return }
+  if (!phoneValid.value) { alert('올바른 휴대폰 번호를 입력해주세요.'); return }
+  if (!form.phoneVerified) { alert('휴대폰 인증을 완료해주세요.'); return }
+  if (!requiredAgreed.value) { alert('필수 약관에 동의해주세요.'); return }
+
+  try {
+    // 2) 파일 업로드 → URL 확보
+    let pictureUrl = ''
+    let voiceUrl = ''
+
+    if (form.childPhoto) {
+      pictureUrl = await uploadChildPicture(childIdForVerification.value, form.childPhoto)
+    }
+    // submit() 내부
+    if (form.childVoice) {
+      const voiceFile = new File([form.childVoice], 'voice.wav', { type: 'audio/wav' })
+      voiceUrl = await uploadChildVoice(childIdForVerification.value, voiceFile)
+    }
+
+
+    // 3) 백엔드 finalize DTO와 동일한 키로 전송
+    const body = {
+      childId: childIdForVerification.value, // ✅ 추가
+      phone: phoneDigits.value,
+      birth: form.birthday,                // ✅ (birthday → birth)
+      gender: form.gender,
+      addr1: form.address || '',           // ✅ (address → addr1)
+      addr2: form.addressDetail || '',     // ✅ (addressDetail → addr2)
+      pictureUrl,                                  // ✅ 업로드 결과
+      voiceUrl,
+    }
+
+    // ⚠️ 컨트롤러 매핑에 맞춰 경로 확인!
+    // 예) /api/verification/finalize-child  혹은 /api/signup/child/finalize
+    const { data } = await http.post('/api/verification/finalize-child', body)
+
+    if (data?.success) {
+      alert('회원가입이 완료되었습니다.')
+      router.push({ name: 'signupcomplete' })
+    } else {
+      alert(data?.message || '회원가입에 실패했습니다.')
+    }
+  } catch (e: any) {
+    console.error(e)
+    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
+  }
+}
+
+
 </script>
 
 <style scoped>
@@ -547,13 +702,15 @@ section.card {
 
 .row {
   display: block;
-  margin: 16px 0; /* ✅ 기존 10px → 16px로 간격 확대 */
+  margin: 16px 0;
+  /* ✅ 기존 10px → 16px로 간격 확대 */
 }
 
 fieldset.row {
   border: none;
   padding: 0;
-  margin: 16px 0; /* 성별 선택 영역도 동일 간격 */
+  margin: 16px 0;
+  /* 성별 선택 영역도 동일 간격 */
 }
 
 .label {
@@ -616,9 +773,12 @@ fieldset.row {
   color: #777;
   line-height: 1.6;
 
-  padding-left: 28px; /* ✅ 오른쪽으로 들여쓰기 */
-  text-indent: -16px; /* 첫 줄 아이콘 포함 정렬 */
+  padding-left: 28px;
+  /* ✅ 오른쪽으로 들여쓰기 */
+  text-indent: -16px;
+  /* 첫 줄 아이콘 포함 정렬 */
 }
+
 .voice-hint::before {
   content: "🎤 ";
 }
