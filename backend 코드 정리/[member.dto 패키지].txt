@@ -1,0 +1,126 @@
+[member.dto 패키지]
+
+package com.skrrrrr.harudam.member.dto;
+
+import com.skrrrrr.harudam.common.enums.UserType;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * 로그인 응답 전용 DTO
+ * - 토큰 발급 후 사용자에게 필요한 최소 정보만 제공
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChildLoginDto {
+    private Long id;
+    private String email;   // 카카오 계정 이메일 or userId
+    private String name;    // 사용자 이름
+    private UserType userType; // CHILD 고정
+    private boolean needAdditionalInfo; // 추가정보 입력 필요 여부
+}
+
+---
+package com.skrrrrr.harudam.member.dto;
+
+import java.time.LocalDate;
+import com.skrrrrr.harudam.common.enums.Gender;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ChildSignupReq {
+    private Long childId;       // 소셜 로그인으로 미리 생성된 PK
+    private String userId;      // 소셜 계정 ID (카카오/구글/네이버)
+    private String password;    // 옵션
+    private String name;
+    private Gender gender;
+    private LocalDate birth;
+    private String phone;
+    private String addr1;
+    private String addr2;
+    private String pictureUrl;
+    private String voiceUrl;
+}
+
+----
+package com.skrrrrr.harudam.member.dto;
+
+import java.time.LocalDate;
+import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChildUserDto {
+    private Long id;
+    private String userId;
+    private String name;
+    private Gender gender;
+    private LocalDate birth;
+    private String phone;
+    private String pictureUrl;
+    private String voiceUrl;
+    private UserState state;
+}
+
+----
+package com.skrrrrr.harudam.member.dto;
+
+import java.time.LocalDate;
+import com.skrrrrr.harudam.common.enums.Gender;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ParentSignupReq {
+    private String name;
+    private Gender gender;    // ENUM
+    private LocalDate birth;
+    private String phone;     // 인증된 휴대폰
+    private String addr1;
+    private String addr2;
+    private String pictureUrl; // ✅ 엔티티와 통일
+}
+
+----
+package com.skrrrrr.harudam.member.dto;
+
+import java.time.LocalDate;
+import com.skrrrrr.harudam.common.enums.Gender;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * 사용자 정보 조회 응답 DTO
+ * (주소 합치기, pictureUrl만 내려주도록 단순화)
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PresentUserDto {
+    private Long id;
+    private String name;
+    private Gender gender;
+    private LocalDate birth;
+    private String phone;
+    private String pictureUrl; // ✅ 엔티티 기준
+    private String addr1;
+    private String addr2;
+}
+

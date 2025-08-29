@@ -1,0 +1,118 @@
+[signup 패키지]
+package com.skrrrrr.harudam.signup;
+
+import com.skrrrrr.harudam.member.ChildUser;
+import com.skrrrrr.harudam.member.ChildUserRepository;
+import com.skrrrrr.harudam.member.ParentChildLink;
+import com.skrrrrr.harudam.member.ParentChildLinkRepository;
+import com.skrrrrr.harudam.member.ParentUser;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
+
+/**
+ * 회원가입 완료 화면에서 표시할 정보 제공용 컨트롤러
+ * - 요구값: JWT 인증(Child 기준) 필요
+ * - 응답: 부모 이름(parentName), 부모 코드(parentCode)
+ *
+ * 프론트의 Signup_Complete.vue가 호출하는 엔드포인트:
+ *   GET /api/v1/signup-complete-info
+ */
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class SignupCompleteController {
+
+    private final ParentChildLinkRepository parentChildLinkRepository;
+    private final ChildUserRepository childUserRepository;
+
+    // ===== DTO =====
+
+    @Getter
+    @AllArgsConstructor
+    public static class CompleteInfoResponse {
+        private boolean success;
+        private String message;
+        private String parentName;  // 화면 노출용
+        private String parentCode;  // 화면 노출/복사용
+    }
+
+    // ===== API =====
+
+    /**
+     * ✅ 회원가입 완료 정보 조회
+     * - 현재 로그인한 Child(JWT subject)의 첫 번째 연결 Parent 정보를 반환
+     */
+    @GetMapping("/signup-complete-info")
+    public ResponseEntity<CompleteInfoResponse> getSignupCompleteInfo() {
+        Long childId = getCurrentChildId();
+        if (childId == null) {
+            return ResponseEntity.status(401)
+                    .body(new CompleteInfoResponse(false, "인증 정보가 없습니다.", null, null));
+        }
+
+        // 자녀 존재 여부 확인
+        Optional<ChildUser> childOpt = childUserRepository.findById(childId);
+        if (childOpt.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new CompleteInfoResponse(false, "자녀 정보를 찾을 수 없습니다.", null, null));
+        }
+
+        // 부모-자녀 링크 중 첫 번째 항목 사용 (여러 명일 수 있으므로)
+        Optional<ParentChildLink> linkOpt = parentChildLinkRepository.findAll().stream()
+                .filter(l -> l.getChildUser() != null && childId.equals(l.getChildUser().getId()))
+                .findFirst();
+
+        if (linkOpt.isEmpty() || linkOpt.get().getParentUser() == null) {
+            return ResponseEntity.badRequest()
+                    .body(new CompleteInfoResponse(false, "연결된 보호자 정보를 찾을 수 없습니다.", null, null));
+        }
+
+        ParentUser parent = linkOpt.get().getParentUser();
+        String parentName = safe(parent.getName(), "보호자");
+        String parentCode = buildParentCode(linkOpt.get(), parent);
+
+        return ResponseEntity.ok(
+                new CompleteInfoResponse(true, "OK", parentName, parentCode)
+        );
+    }
+
+    // ===== Helpers =====
+
+    /**
+     * JWT 필터에서 넣어둔 Authentication(User)의 username = childId 문자열
+     */
+    private Long getCurrentChildId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof User user)) return null;
+        try {
+            return Long.parseLong(user.getUsername());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String safe(String s, String fallback) {
+        return (s == null || s.isBlank()) ? fallback : s;
+    }
+
+    /**
+     * 부모 코드 생성 로직(예시):
+     * - 링크 ID를 base36으로 인코딩하여 사람이 읽기 쉬운 코드로 제공
+     * - 예: linkId=123 -> "P-3F"
+     */
+    private String buildParentCode(ParentChildLink link, ParentUser parent) {
+        long linkId = link.getLinkId() == null ? 0L : link.getLinkId();
+        String base36 = Long.toString(linkId, 36).toUpperCase();
+        return "P-" + base36;
+    }
+}

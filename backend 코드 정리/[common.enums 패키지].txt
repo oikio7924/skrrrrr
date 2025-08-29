@@ -1,0 +1,86 @@
+[common.enums 패키지]
+
+package com.skrrrrr.harudam.common.enums;
+
+public enum AuthCodePurpose {
+	SIGNUP,		// 회원가입용
+	LOGIN,		// 로그인/재인증용
+	RESET		// 비밀번호 초기화용
+}
+----
+package com.skrrrrr.harudam.common.enums;
+
+public enum AuthCodeStatus {
+	ISSUED,		// 발급됨
+	USED,		// 사용됨
+	EXPIRED,	// 만료됨
+	REVOKED		// 취소됨
+}
+----
+package com.skrrrrr.harudam.common.enums;
+
+public enum EmotionWord {
+	HAPPY,
+	NEUTRAL,
+	SAD,
+	ANGRY,
+	ANXIOUS,
+	CALM,
+	SUPRRISED
+}
+----
+package com.skrrrrr.harudam.common.enums;
+
+public enum Gender {
+	M,
+	F
+}
+----
+package com.skrrrrr.harudam.common.enums;
+
+public enum ScheduleCategory {
+	HOSPITAL,
+	MEDICATION,
+	PHONE_CALL,
+	APPOINTMENT,
+	ETC
+}
+
+----
+
+package com.skrrrrr.harudam.common.enums;
+
+public enum ScheduleStatus {
+	PLANNED,
+	DONE,
+	CANCELED,
+	SNOOZED
+}
+
+----
+
+package com.skrrrrr.harudam.common.enums;
+
+public enum SocialLogin {
+	KAKAO,
+	GOOGLE,
+	NAVER,
+}
+
+-----
+package com.skrrrrr.harudam.common.enums;
+
+public enum UserState {
+	PENDING,	//비활성화
+	ACTIVE,		//활성화
+	INACTIVE	//이용중지
+}
+
+----
+
+package com.skrrrrr.harudam.common.enums;
+
+public enum UserType {
+	PARENT,
+	CHILD
+}

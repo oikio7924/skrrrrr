@@ -1,0 +1,213 @@
+[jwt 패키지]
+
+package com.skrrrrr.harudam.jwt;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.util.Collections;
+
+/**
+ * JWT 인증 필터
+ * - Authorization 헤더의 Bearer ACCESS 토큰만 허용
+ * - REFRESH 토큰은 인증용으로는 거부
+ */
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
+
+        // 1. Authorization 헤더에서 토큰 추출
+        String token = resolveToken(request);
+
+        // 2. 유효한 ACCESS 토큰인지 검증
+        if (token != null && jwtTokenProvider.validateAccessToken(token)) {
+            Long userId = jwtTokenProvider.getUserIdFromToken(token);
+
+            UserDetails userDetails = new User(
+                    userId.toString(),
+                    "",
+                    Collections.emptyList()
+            );
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            "",
+                            userDetails.getAuthorities()
+                    );
+
+            // SecurityContext 에 저장 → 컨트롤러에서 @AuthenticationPrincipal 등으로 접근 가능
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+
+        // 3. 다음 필터 진행
+        filterChain.doFilter(request, response);
+    }
+
+    // Authorization 헤더 → Bearer <token> 파싱
+    private String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+}
+
+----
+package com.skrrrrr.harudam.jwt;
+
+import com.skrrrrr.harudam.member.ChildUser;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
+
+/**
+ * JWT 발급/검증 유틸리티
+ * - Access / Refresh 토큰 모두 지원
+ * - claim "tokenType" 으로 ACCESS / REFRESH 구분
+ *
+ * application.properties 예시:
+ *   jwt.secret=BASE64_ENCODED_256bit_KEY   # openssl rand -base64 32
+ *   jwt.expiration=3600000                 # AccessToken 만료(ms)  -> 1시간
+ *   jwt.refreshExpiration=1209600000       # RefreshToken 만료(ms) -> 14일
+ */
+@Component
+public class JwtTokenProvider {
+
+    private static final String CLAIM_TOKEN_TYPE = "tokenType";
+    private static final String TOKEN_TYPE_ACCESS = "ACCESS";
+    private static final String TOKEN_TYPE_REFRESH = "REFRESH";
+
+    private final SecretKey key;
+    private final long accessTokenValidityInMs;
+    private final long refreshTokenValidityInMs;
+
+    public JwtTokenProvider(
+            @Value("${jwt.secret}") String base64SecretKey,
+            @Value("${jwt.expiration}") long accessTokenValidityInMs,
+            @Value("${jwt.refreshExpiration}") long refreshTokenValidityInMs
+    ) {
+        // secret 은 Base64 로 관리하는 것을 권장 (openssl rand -base64 32)
+        byte[] keyBytes = Decoders.BASE64.decode(base64SecretKey);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+        this.accessTokenValidityInMs = accessTokenValidityInMs;
+        this.refreshTokenValidityInMs = refreshTokenValidityInMs;
+    }
+
+    /* =========================================================================
+       생성 (Create)
+       ========================================================================= */
+
+    public String createAccessToken(ChildUser childUser) {
+        return createAccessToken(childUser.getId());
+    }
+
+    public String createAccessToken(Long userId) {
+        return createToken(userId, TOKEN_TYPE_ACCESS, accessTokenValidityInMs);
+    }
+
+    public String createRefreshToken(ChildUser childUser) {
+        return createRefreshToken(childUser.getId());
+    }
+
+    public String createRefreshToken(Long userId) {
+        return createToken(userId, TOKEN_TYPE_REFRESH, refreshTokenValidityInMs);
+    }
+
+    private String createToken(Long userId, String tokenType, long validityMs) {
+        Instant now = Instant.now();
+        Instant exp = now.plusMillis(validityMs);
+
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))              // sub = userId
+                .setIssuedAt(Date.from(now))                     // iat
+                .setExpiration(Date.from(exp))                   // exp
+                .addClaims(Map.of(CLAIM_TOKEN_TYPE, tokenType))  // ACCESS/REFRESH 구분
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /* =========================================================================
+       파싱/검증 (Parse / Validate)
+       ========================================================================= */
+
+    /**
+     * 서명/만료 검증 (ACCESS/REFRESH 공통)
+     */
+    public boolean validateToken(String token) {
+        try {
+            parser().parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * ACCESS 전용 검증 (tokenType 체크)
+     */
+    public boolean validateAccessToken(String token) {
+        try {
+            Claims claims = parser().parseClaimsJws(token).getBody();
+            return TOKEN_TYPE_ACCESS.equals(getTokenType(claims));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * REFRESH 전용 검증 (tokenType 체크)
+     */
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = parser().parseClaimsJws(token).getBody();
+            return TOKEN_TYPE_REFRESH.equals(getTokenType(claims));
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public Long getUserIdFromToken(String token) {
+        Claims claims = parser().parseClaimsJws(token).getBody();
+        return Long.parseLong(claims.getSubject());
+    }
+
+    public String getTokenType(String token) {
+        Claims claims = parser().parseClaimsJws(token).getBody();
+        return getTokenType(claims);
+    }
+
+    private String getTokenType(Claims claims) {
+        Object typ = claims.get(CLAIM_TOKEN_TYPE);
+        return typ == null ? "" : String.valueOf(typ);
+    }
+
+    private JwtParser parser() {
+        return Jwts.parserBuilder().setSigningKey(key).build();
+    }
+}

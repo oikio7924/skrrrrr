@@ -1,0 +1,580 @@
+[member 패키지]
+
+package com.skrrrrr.harudam.member;
+
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "child_users")
+@Getter
+@Setter
+public class ChildUser {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, length = 100)
+    private String userId;   // 소셜 로그인 ID (카카오, 구글, 네이버)
+
+    @Column(length = 255)
+    private String password;
+
+    @Column(length = 50)
+    private String name;
+
+    private LocalDate birth;
+    
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Column(unique = true, length = 20)
+    private String phone;
+
+    // 원본 파일 경로
+    @Column(length = 500)
+    private String pictureUrl; // 사진 파일 URL
+    
+    @Column(length = 500)
+    private String voiceUrl;   // 음성 파일 URL
+    
+    // 주소
+    @Column(length = 255)
+    private String addr1;  // 기본 주소 (도로명/지번)
+    @Column(length = 255)
+    private String addr2;  // 상세 주소
+
+    // ✅ AI 학습 결과 경로 추가
+    @Column(length = 500)
+    private String aiPicturePath;
+
+    @Column(length = 500)
+    private String aiVoicePath;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserState state = UserState.PENDING;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private ZonedDateTime createdAt;
+
+    @UpdateTimestamp
+    private ZonedDateTime updatedAt;
+}
+
+----
+package com.skrrrrr.harudam.member;
+
+import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+
+/**
+ * 자녀 회원가입 관련 API 컨트롤러
+ */
+@RestController
+@RequestMapping("/api/child")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class ChildUserController {
+
+    private final ChildUserRepository childUserRepository;
+
+    // ---------------- DTO ----------------
+
+    @Getter
+    @NoArgsConstructor
+    public static class ChildSignupRequest {
+        private String userId;    // 소셜 로그인 ID
+        private String password;  // 선택
+        private String name;
+        private String gender;    // "MALE" / "FEMALE"
+        private String birth;     // yyyy-MM-dd
+        private String phone;
+        private String addr1;
+        private String addr2;
+        private String pictureUrl; // 원본 사진 URL
+        private String voiceUrl;   // 원본 음성 URL
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class ChildSignupResponse {
+        private boolean success;
+        private String message;
+        private Long childId;
+    }
+
+    // ---------------- API ----------------
+
+    /**
+     * ✅ 자녀 회원가입 API
+     */
+    @PostMapping("/signup")
+    public ResponseEntity<ChildSignupResponse> signup(@RequestBody ChildSignupRequest req) {
+        if (req.getUserId() == null || req.getName() == null || req.getGender() == null
+                || req.getBirth() == null || req.getPhone() == null) {
+            return ResponseEntity.badRequest()
+                    .body(new ChildSignupResponse(false, "필수값 누락", null));
+        }
+
+        ChildUser child = new ChildUser();
+        child.setUserId(req.getUserId());
+        child.setPassword(req.getPassword());
+        child.setName(req.getName());
+        child.setGender(Gender.valueOf(req.getGender().toUpperCase()));
+        child.setBirth(LocalDate.parse(req.getBirth()));
+        child.setPhone(req.getPhone());
+        child.setAddr1(req.getAddr1());
+        child.setAddr2(req.getAddr2());
+        child.setPictureUrl(req.getPictureUrl());
+        child.setVoiceUrl(req.getVoiceUrl());
+        child.setState(UserState.PENDING); // 기본값
+
+        ChildUser saved = childUserRepository.save(child);
+
+        return ResponseEntity.ok(
+                new ChildSignupResponse(true, "자녀 회원가입 완료", saved.getId())
+        );
+    }
+}
+
+----
+package com.skrrrrr.harudam.member;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.skrrrrr.harudam.common.enums.SocialLogin;
+
+@Repository
+public interface ChildUserRepository extends JpaRepository<ChildUser, Long> {
+	// 아이디로 자녀 계정 찾는 기능
+	Optional<ChildUser> findByUserId(String userId);
+
+	// 소셜 로그인 정보로 자녀 계정 찾는 기능
+	@Query("SELECT cu FROM ChildUser cu "
+		 + "JOIN AuthIdentity ai ON ai.childUser = cu "
+		 + "WHERE ai.provider = :provider "
+		 + "AND ai.providerUserId = :providerUserId")
+	Optional<ChildUser> findBySocialLogin(@Param("provider") SocialLogin provider, 
+										  @Param("providerUserId") String providerUserId);
+
+}
+----
+package com.skrrrrr.harudam.member;
+
+import java.time.ZonedDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "parent_child_link", uniqueConstraints = {
+		@UniqueConstraint(columnNames = {"parent_user_id", "child_user_id"}, name = "ux_pcl_parent_child")
+})
+@Getter
+@Setter
+public class ParentChildLink {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long linkId;
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "parent_user_id", nullable = false)
+	private ParentUser parentUser;
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "child_user_id", nullable = false)
+	private ChildUser childUser;
+	
+	@CreationTimestamp
+	@Column(updatable = false)
+	private ZonedDateTime createdAt;
+}
+----
+package com.skrrrrr.harudam.member;
+
+import com.skrrrrr.harudam.ai.AiImageService;
+import com.skrrrrr.harudam.ai.AiVoiceService;
+import com.skrrrrr.harudam.common.enums.UserState;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.nio.file.Path;
+import java.util.Map;
+
+/**
+ * 부모-자녀 관계 연결 + 서비스 시작하기 API
+ */
+@RestController
+@RequestMapping("/api/link")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class ParentChildLinkController {
+
+    private final ParentUserRepository parentUserRepository;
+    private final ChildUserRepository childUserRepository;
+    private final ParentChildLinkRepository parentChildLinkRepository;
+    private final AiImageService imageService;
+    private final AiVoiceService voiceService;
+
+    // ---------------- DTO ----------------
+
+    @Getter
+    @NoArgsConstructor
+    public static class LinkRequest {
+        private Long parentId;
+        private Long childId;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class LinkResponse {
+        private boolean success;
+        private String message;
+        private Long linkId;
+    }
+
+    // ---------------- API ----------------
+
+    /**
+     * ✅ 부모-자녀 관계 생성 API
+     */
+    @PostMapping("/connect")
+    public ResponseEntity<LinkResponse> connect(@RequestBody LinkRequest req) {
+        if (req.getParentId() == null || req.getChildId() == null) {
+            return ResponseEntity.badRequest()
+                    .body(new LinkResponse(false, "parentId, childId는 필수입니다.", null));
+        }
+
+        ParentUser parent = parentUserRepository.findById(req.getParentId()).orElse(null);
+        ChildUser child = childUserRepository.findById(req.getChildId()).orElse(null);
+
+        if (parent == null || child == null) {
+            return ResponseEntity.badRequest()
+                    .body(new LinkResponse(false, "부모 또는 자녀를 찾을 수 없습니다.", null));
+        }
+
+        // 이미 존재하는 관계인지 확인
+        boolean exists = parentChildLinkRepository.findAll().stream()
+                .anyMatch(link ->
+                        link.getParentUser().getId().equals(req.getParentId()) &&
+                        link.getChildUser().getId().equals(req.getChildId())
+                );
+
+        if (exists) {
+            return ResponseEntity.ok(
+                    new LinkResponse(true, "이미 부모-자녀 관계가 존재합니다.", null)
+            );
+        }
+
+        // 새로운 관계 저장
+        ParentChildLink link = new ParentChildLink();
+        link.setParentUser(parent);
+        link.setChildUser(child);
+        ParentChildLink saved = parentChildLinkRepository.save(link);
+
+        return ResponseEntity.ok(
+                new LinkResponse(true, "부모-자녀 관계가 생성되었습니다.", saved.getLinkId())
+        );
+    }
+
+    /**
+     * ✅ 서비스 시작하기 버튼 → 부모/자녀 ACTIVE 전환 + AI 학습 실행
+     */
+    @PostMapping("/complete/{childId}/{parentId}")
+    public ResponseEntity<?> completeSignup(@PathVariable Long childId,
+                                            @PathVariable Long parentId) {
+        ChildUser child = childUserRepository.findById(childId)
+                .orElseThrow(() -> new IllegalArgumentException("Child not found"));
+        ParentUser parent = parentUserRepository.findById(parentId)
+                .orElseThrow(() -> new IllegalArgumentException("Parent not found"));
+
+        // ---------------- AI 학습 실행 (스텁) ----------------
+        Path aiChildPic = imageService.generateDiaryImage(childId, "자녀 학습용 프로필 이미지");
+        Path aiChildVoice = voiceService.trainChildVoice(childId,
+                Path.of("uploads/child/" + childId + "/voice/sample.mp3"));
+        Path aiParentPic = imageService.generateAutobiographyCover(parentId, "부모 자서전 표지 이미지");
+        Path aiParentVoice = voiceService.trainParentVoice(parentId,
+                Path.of("uploads/parent/" + parentId + "/" + parentId + "_voice.zip"));
+
+        // ---------------- DB 업데이트 ----------------
+        child.setAiPicturePath(aiChildPic.toString());
+        child.setAiVoicePath(aiChildVoice.toString());
+        parent.setAiPicturePath(aiParentPic.toString());
+        parent.setAiVoicePath(aiParentVoice.toString());
+
+        child.setState(UserState.ACTIVE);
+        parent.setState(UserState.ACTIVE);
+
+        childUserRepository.save(child);
+        parentUserRepository.save(parent);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "서비스 시작하기 완료",
+                "childId", child.getId(),
+                "parentId", parent.getId(),
+                "childAiPic", aiChildPic.toString(),
+                "childAiVoice", aiChildVoice.toString(),
+                "parentAiPic", aiParentPic.toString(),
+                "parentAiVoice", aiParentVoice.toString()
+        ));
+    }
+}
+
+----
+package com.skrrrrr.harudam.member;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface ParentChildLinkRepository extends JpaRepository<ParentChildLink, Long> {
+
+    /**
+     * ✅ 자녀 ID 기준으로 가장 최근 ParentChildLink 하나 조회
+     */
+    Optional<ParentChildLink> findFirstByChildUser_IdOrderByCreatedAtDesc(Long childId);
+
+    /**
+     * ✅ 특정 부모-자녀 관계 존재 여부 확인
+     */
+    boolean existsByParentUser_IdAndChildUser_Id(Long parentId, Long childId);
+}
+
+----
+package com.skrrrrr.harudam.member;
+
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "parent_users")
+@Getter
+@Setter
+public class ParentUser {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // 소셜 로그인 ID 또는 자체 아이디
+    @Column(unique = true, length = 100)
+    private String userId;
+
+    @Column(length = 50)
+    private String name;
+
+    @Column(unique = true, length = 20)
+    private String phone;
+    
+    private LocalDate birth;
+    
+    // 주소
+    @Column(length = 255)
+    private String addr1;  // 기본 주소
+    @Column(length = 255)
+    private String addr2;  // 상세 주소
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+    
+    // 원본 파일 경로
+    @Column(length = 500)
+    private String pictureUrl; // 사진 파일 URL
+
+    @Column(length = 500)
+    private String voiceUrl;   // 음성 파일 URL
+
+    // ✅ AI 학습 결과 파일 경로
+    @Column(length = 500)
+    private String aiPicturePath;
+
+    @Column(length = 500)
+    private String aiVoicePath;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserState state = UserState.PENDING;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private ZonedDateTime createdAt;
+
+    @UpdateTimestamp
+    private ZonedDateTime updatedAt;
+}
+
+----
+package com.skrrrrr.harudam.member;
+
+import com.skrrrrr.harudam.common.enums.Gender;
+import com.skrrrrr.harudam.common.enums.UserState;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+
+/**
+ * 부모 회원가입 / 정보 업데이트 관련 API 컨트롤러
+ */
+@RestController
+@RequestMapping("/api/parent")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class ParentUserController {
+
+    private final ParentUserRepository parentUserRepository;
+    private final ChildUserRepository childUserRepository;
+    private final ParentChildLinkRepository parentChildLinkRepository;
+
+    // ---------------- DTO ----------------
+
+    @Getter
+    @NoArgsConstructor
+    public static class ParentSignupRequest {
+        private String name;       // 부모 성함
+        private String gender;     // "MALE"/"FEMALE"
+        private String birth;      // yyyy-MM-dd
+        private String phone;      // 인증된 휴대폰 번호
+        private String addr1;      // 기본 주소
+        private String addr2;      // 상세 주소
+        private String pictureUrl; // 부모 사진 (파일 업로드 후 URL)
+        private Long childId;      // 연결할 자녀 ID
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class ParentSignupResponse {
+        private boolean success;
+        private String message;
+        private Long parentId;
+        private Long childId;
+        private Long linkId;
+    }
+
+    // ---------------- API ----------------
+
+    /**
+     * ✅ 부모 회원가입 + 자녀와 자동 연결
+     */
+    @PostMapping("/signup")
+    public ResponseEntity<ParentSignupResponse> signup(@RequestBody ParentSignupRequest req) {
+        if (req.getName() == null || req.getName().isBlank()
+                || req.getGender() == null || req.getGender().isBlank()
+                || req.getBirth() == null || req.getBirth().isBlank()
+                || req.getPhone() == null || req.getPhone().isBlank()
+                || req.getChildId() == null) {
+            return ResponseEntity.badRequest()
+                    .body(new ParentSignupResponse(false, "필수값 누락", null, null, null));
+        }
+
+        // 휴대폰 번호 기준으로 부모 조회 (이미 있으면 업데이트, 없으면 새로 생성)
+        ParentUser parent = parentUserRepository.findByPhone(req.getPhone())
+                .orElseGet(ParentUser::new);
+
+        parent.setName(req.getName());
+        parent.setGender(Gender.valueOf(req.getGender().toUpperCase()));
+        parent.setBirth(LocalDate.parse(req.getBirth()));
+        parent.setPhone(req.getPhone());
+        parent.setAddr1(req.getAddr1());
+        parent.setAddr2(req.getAddr2());
+        parent.setPictureUrl(req.getPictureUrl());
+        parent.setState(UserState.PENDING);
+
+        ParentUser savedParent = parentUserRepository.save(parent);
+
+        // 자녀 조회
+        ChildUser child = childUserRepository.findById(req.getChildId()).orElse(null);
+        if (child == null) {
+            return ResponseEntity.badRequest()
+                    .body(new ParentSignupResponse(false, "자녀를 찾을 수 없습니다.", savedParent.getId(), null, null));
+        }
+
+        // 부모-자녀 관계 자동 생성 (중복 체크 포함)
+        ParentChildLink link = parentChildLinkRepository
+                .findFirstByChildUser_IdOrderByCreatedAtDesc(req.getChildId())
+                .orElseGet(() -> {
+                    ParentChildLink newLink = new ParentChildLink();
+                    newLink.setParentUser(savedParent);
+                    newLink.setChildUser(child);
+                    return parentChildLinkRepository.save(newLink);
+                });
+
+        return ResponseEntity.ok(
+                new ParentSignupResponse(true, "부모 정보 및 관계가 저장되었습니다.",
+                        savedParent.getId(), child.getId(), link.getLinkId())
+        );
+    }
+}
+
+-----
+package com.skrrrrr.harudam.member;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface ParentUserRepository extends JpaRepository<ParentUser, Long>{
+	// 전화번호로 부모님 계정을 찾는 기능
+	Optional<ParentUser> findByPhone(String phone);
+}

@@ -1,0 +1,31 @@
+[common.dto 패키지]
+package com.skrrrrr.harudam.common.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+/**
+ * ✅ 모든 API에서 공통으로 사용할 응답 Wrapper
+ * - success: 성공 여부
+ * - message: 사용자 친화적 메시지
+ * - data: 실제 데이터 (없으면 null)
+ */
+@Getter
+@AllArgsConstructor
+public class ApiResponse<T> {
+    private final boolean success;
+    private final String message;
+    private final T data;
+
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(true, "요청이 성공했습니다.", data);
+    }
+
+    public static <T> ApiResponse<T> ok(String message, T data) {
+        return new ApiResponse<>(true, message, data);
+    }
+
+    public static <T> ApiResponse<T> fail(String message) {
+        return new ApiResponse<>(false, message, null);
+    }
+}

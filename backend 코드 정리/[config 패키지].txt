@@ -1,0 +1,151 @@
+[config 패키지]
+
+package com.skrrrrr.harudam.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.List;
+
+@Configuration
+public class CorsConfig {
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration c = new CorsConfiguration();
+        c.setAllowedOrigins(List.of("http://localhost:5173"));
+        c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        c.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Accept"));
+        c.setExposedHeaders(List.of("Authorization","Content-Type"));
+        c.setAllowCredentials(true);
+        c.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", c);
+        return source;
+    }
+}
+----
+package com.skrrrrr.harudam.config;
+
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
+import java.time.Duration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+
+/**
+ * 외부 HTTP 클라이언트(WebClient) 모음.
+ * - kakaoWebClient: https://kapi.kakao.com 을 기본 baseUrl로 사용
+ */
+@Configuration
+public class HttpClientsConfig {
+
+    @Bean
+    public WebClient kakaoWebClient() {
+        // (선택) 타임아웃/버퍼 설정
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5_000)
+                .responseTimeout(Duration.ofSeconds(10))
+                .doOnConnected(conn -> conn
+                        .addHandlerLast(new ReadTimeoutHandler(10))
+                        .addHandlerLast(new WriteTimeoutHandler(10)));
+
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(cfg -> cfg.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
+                .build();
+
+        return WebClient.builder()
+                .baseUrl("https://kapi.kakao.com")
+                // 카카오는 /v2/user/me GET 시 Content-Type 필요 없음. 공통 헤더는 필요 시 여기서 추가.
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .exchangeStrategies(strategies)
+                .build();
+    }
+}
+
+----
+package com.skrrrrr.harudam.config;
+
+import com.skrrrrr.harudam.jwt.JwtAuthenticationFilter;
+import com.skrrrrr.harudam.jwt.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // ✅ 소셜 로그인 관련
+                .requestMatchers("/api/auth/**").permitAll()
+                // ✅ 테스트용
+                .requestMatchers("/api/test/**").permitAll()
+                // ✅ 휴대폰 인증 (childId 있는 경우/없는 경우 모두 허용)
+                .requestMatchers("/api/verification/**").permitAll()
+                
+                .requestMatchers("/api/send-verification-code",
+                                 "/api/send-verification-signup",                    
+                                 "/api/verify-code").permitAll()
+                // 나머지는 인증 필요
+                .anyRequest().authenticated()
+            )
+            .httpBasic(b -> b.disable())
+            .formLogin(f -> f.disable())
+            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+}
+
+----
+package com.skrrrrr.harudam.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // http://localhost:8080/uploads/** → 실제 로컬 uploads 폴더 매핑
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:uploads/"); 
+    }
+}

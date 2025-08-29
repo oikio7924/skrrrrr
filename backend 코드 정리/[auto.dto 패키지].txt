@@ -1,0 +1,99 @@
+[auto.dto 패키지]
+
+package com.skrrrrr.harudam.auth.dto;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+public class KakaoTokenReq {
+	private String accessToken;
+}
+----
+package com.skrrrrr.harudam.auth.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class KakaoUserMe {
+
+    private Long id;
+
+    @JsonProperty("kakao_account")
+    private KakaoAccount kakaoAccount;
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class KakaoAccount {
+        private String email;
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public KakaoAccount getKakaoAccount() { return kakaoAccount; }
+    public void setKakaoAccount(KakaoAccount kakaoAccount) { this.kakaoAccount = kakaoAccount; }
+}
+----
+package com.skrrrrr.harudam.auth.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * 부모 로그인 응답 전용 DTO
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ParentLoginDto {
+    private Long id;
+    private String name;
+    private String phone;
+}
+----
+package com.skrrrrr.harudam.auth.dto;
+
+import com.skrrrrr.harudam.common.enums.SocialLogin;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class SocialLoginRequestDto {
+	private SocialLogin provider;
+	private String code;
+}
+-----
+package com.skrrrrr.harudam.auth.dto;
+
+import com.skrrrrr.harudam.common.enums.UserType;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * 로그인 응답 DTO
+ * - 부모/자녀 모두 공용
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class TokenDto {
+    private String accessToken;
+    private String refreshToken;
+    private long expiresIn;
+    private UserType userType; // ✅ 부모/자녀 구분
+    private Object user;       // ChildUserDto or ParentLoginDto
+}
+

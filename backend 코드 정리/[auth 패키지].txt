@@ -1,0 +1,471 @@
+[auth 패키지]
+
+package com.skrrrrr.harudam.auth;
+
+import java.time.ZonedDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import com.skrrrrr.harudam.common.enums.AuthCodePurpose;
+import com.skrrrrr.harudam.common.enums.AuthCodeStatus;
+import com.skrrrrr.harudam.member.ChildUser;
+import com.skrrrrr.harudam.member.ParentUser;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "auth_code")
+@Getter
+@Setter
+public class AuthCode {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long codeId;
+
+    @Column(nullable = false, unique = true, length = 6)
+    private String codeValue;
+
+    // ✅ childId 없이도 저장할 수 있도록 nullable = true 로 변경
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "issued_by_child_id", nullable = true)
+    private ChildUser issuedByChild;
+
+    @Column(nullable = false, length = 20)
+    private String targetParentPhone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthCodeStatus status = AuthCodeStatus.ISSUED;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthCodePurpose purpose;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private ZonedDateTime createdAt;
+
+    @Column(nullable = false)
+    private ZonedDateTime expiresAt;
+
+    private ZonedDateTime usedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "used_by_parent_id")
+    private ParentUser usedByParent;
+}
+
+-----
+package com.skrrrrr.harudam.auth;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.skrrrrr.harudam.common.enums.AuthCodeStatus;
+
+@Repository
+public interface AuthCodeRepository extends JpaRepository<AuthCode, Long> {
+    Optional<AuthCode> findTopByTargetParentPhoneAndStatusOrderByCreatedAtDesc(
+            String targetParentPhone,
+            AuthCodeStatus status
+    );
+}
+-----
+package com.skrrrrr.harudam.auth;
+
+import com.skrrrrr.harudam.auth.dto.SocialLoginRequestDto;
+import com.skrrrrr.harudam.auth.dto.TokenDto;
+import com.skrrrrr.harudam.common.enums.SocialLogin;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/social-login")
+    public ResponseEntity<TokenDto> socialLogin(@RequestBody SocialLoginRequestDto req) {
+        if (req == null || req.getProvider() == null || req.getCode() == null || req.getCode().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        TokenDto token;
+        if (req.getProvider() == SocialLogin.KAKAO) {
+            token = authService.loginWithKakaoAccessToken(req.getCode());
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(token);
+    }
+
+    /**
+     * ✅ RefreshToken → 새 AccessToken 발급
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenDto> refresh(@RequestBody RefreshRequest req) {
+        if (req == null || req.refreshToken == null || req.refreshToken.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        TokenDto token = authService.refreshAccessToken(req.refreshToken);
+        return ResponseEntity.ok(token);
+    }
+
+    public static class RefreshRequest {
+        public String refreshToken;
+    }
+}
+-----
+package com.skrrrrr.harudam.auth;
+
+import java.time.ZonedDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import com.skrrrrr.harudam.common.enums.SocialLogin;
+import com.skrrrrr.harudam.member.ChildUser;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.Setter;
+
+@Entity
+@Table(name = "auth_identities", uniqueConstraints = {
+		@UniqueConstraint(columnNames = {"provider", "provider_user_id"}, name = "ux_ai_provider_user")
+})
+@Getter
+@Setter
+public class AuthIdentity {
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long identityId;
+	
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private SocialLogin provider;
+	
+	@Column(nullable = false, length = 128)
+	private String providerUserId;
+	
+	@Column(length = 255)
+	private String providerEmail;
+	
+	@Column(length = 100)
+	private String displayName;
+	
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "user_id", nullable = false, unique = true)
+	private ChildUser childUser;
+	
+	@Column(columnDefinition = "text")
+	private String accessTokenEnc;
+	
+	@Column(columnDefinition = "text")
+	private String refreshTokenEnc;
+	
+	private ZonedDateTime expiresAt;
+	
+	@CreationTimestamp
+	@Column(updatable = false)
+	private ZonedDateTime connectedAt;
+	
+	private ZonedDateTime lastLoginAt;
+	
+
+}
+-----
+package com.skrrrrr.harudam.auth;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.skrrrrr.harudam.common.enums.SocialLogin;
+
+@Repository
+public interface AuthIdentityRepository extends JpaRepository<AuthIdentity, Long>{
+		Optional<AuthIdentity> findByProviderAndProviderUserId(SocialLogin provider, String providerUserId);
+}
+-----
+package com.skrrrrr.harudam.auth;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.skrrrrr.harudam.auth.dto.ParentLoginDto;
+import com.skrrrrr.harudam.auth.dto.TokenDto;
+import com.skrrrrr.harudam.common.enums.UserType;
+import com.skrrrrr.harudam.jwt.JwtTokenProvider;
+import com.skrrrrr.harudam.member.ChildUser;
+import com.skrrrrr.harudam.member.ChildUserRepository;
+import com.skrrrrr.harudam.member.ParentUser;
+import com.skrrrrr.harudam.member.ParentUserRepository;
+import com.skrrrrr.harudam.member.dto.ChildUserDto;
+import com.skrrrrr.harudam.verification.VerificationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import java.time.LocalDate;
+import java.util.Optional;
+
+/**
+ * 인증/로그인 서비스
+ * - 자녀: 소셜 로그인(카카오) / 자체 로그인(아이디/비밀번호)
+ * - 부모: 인증코드(8자리) 로그인
+ * - 공통 응답: TokenDto(UserType 포함, user에는 ChildUserDto 또는 ParentLoginDto)
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final WebClient kakaoWebClient;
+    private final ChildUserRepository childUserRepository;
+    private final ParentUserRepository parentUserRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final VerificationService verificationService;
+
+    /**
+     * 자녀 - 카카오 AccessToken 로그인 처리
+     */
+    public TokenDto loginWithKakaoAccessToken(String kakaoAccessToken) {
+        if (kakaoAccessToken == null || kakaoAccessToken.isBlank()) {
+            throw new IllegalArgumentException("kakaoAccessToken is blank");
+        }
+
+        KakaoMeResponse me;
+        try {
+            me = kakaoWebClient
+                    .get()
+                    .uri("/v2/user/me")
+                    .header("Authorization", "Bearer " + kakaoAccessToken)
+                    .retrieve()
+                    .bodyToMono(KakaoMeResponse.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.warn("Kakao /v2/user/me error. status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw e;
+        }
+
+        if (me == null) throw new IllegalStateException("kakao profile is null");
+
+        final String kakaoId = String.valueOf(me.id);
+        final String nickname = me.properties != null ? nullToEmpty(me.properties.nickname) : "";
+        final String email = me.kakaoAccount != null ? nullToEmpty(me.kakaoAccount.email) : "";
+
+        // DB에서 ChildUser 조회 or 신규 생성
+        Optional<ChildUser> optionalChild = childUserRepository.findByUserId(kakaoId);
+        ChildUser child = optionalChild.orElseGet(() -> {
+            ChildUser c = new ChildUser();
+            c.setUserId(kakaoId);
+            c.setName(nickname.isBlank() ? "카카오사용자" : nickname);
+            return childUserRepository.save(c);
+        });
+
+        // 서버 JWT 발급
+        String accessToken = jwtTokenProvider.createAccessToken(child);
+        String refreshToken = jwtTokenProvider.createRefreshToken(child);
+
+        // 엔티티 기반 자녀 정보 DTO 구성
+        ChildUserDto childDto = new ChildUserDto(
+                child.getId(),
+                child.getUserId(),
+                child.getName(),
+                child.getGender(),
+                child.getBirth(),
+                child.getPhone(),
+                child.getPictureUrl(),
+                child.getVoiceUrl(),
+                child.getState()
+        );
+
+        return new TokenDto(
+                accessToken,
+                refreshToken,
+                3600L,
+                UserType.CHILD,
+                childDto
+        );
+    }
+
+    /**
+     * 자녀 - 서비스 자체 로그인 (아이디/비밀번호)
+     * 비밀번호 비교는 단순 equals로 처리 중이며, 운영 시엔 반드시 BCrypt 등으로 암호화/검증하세요.
+     */
+    public TokenDto loginWithIdPassword(String userId, String password) {
+        if (userId == null || userId.isBlank() || password == null) {
+            throw new IllegalArgumentException("userId/password is blank");
+        }
+
+        ChildUser child = childUserRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        String stored = child.getPassword();
+        if (stored == null || !stored.equals(password)) {
+            // TODO: BCryptPasswordEncoder 등의 해시 검증으로 교체
+            throw new IllegalArgumentException("비밀번호가 올바르지 않습니다.");
+        }
+
+        String accessToken = jwtTokenProvider.createAccessToken(child);
+        String refreshToken = jwtTokenProvider.createRefreshToken(child);
+
+        ChildUserDto childDto = new ChildUserDto(
+                child.getId(),
+                child.getUserId(),
+                child.getName(),
+                child.getGender(),
+                child.getBirth(),
+                child.getPhone(),
+                child.getPictureUrl(),
+                child.getVoiceUrl(),
+                child.getState()
+        );
+
+        return new TokenDto(
+                accessToken,
+                refreshToken,
+                3600L,
+                UserType.CHILD,
+                childDto
+        );
+    }
+
+    /**
+     * 부모 - 인증코드(8자리) 로그인
+     * 인증코드 검증 및 ParentUser 조회는 VerificationService에 위임
+     */
+    public TokenDto loginParentWithAuthCode(String authCode) {
+        if (authCode == null || authCode.isBlank()) {
+            throw new IllegalArgumentException("authCode is blank");
+        }
+
+        ParentUser parent = verificationService.verifyAndGetParent(authCode)
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 인증코드입니다."));
+
+        String accessToken = jwtTokenProvider.createAccessToken(parent);
+        String refreshToken = jwtTokenProvider.createRefreshToken(parent);
+
+        ParentLoginDto parentDto = new ParentLoginDto(
+                parent.getId(),
+                parent.getName(),
+                parent.getPhone()
+        );
+
+        return new TokenDto(
+                accessToken,
+                refreshToken,
+                3600L,
+                UserType.PARENT,
+                parentDto
+        );
+    }
+
+    /**
+     * (자녀용) RefreshToken으로 AccessToken 재발급
+     * NOTE: 현재 구현은 자녀 기준. 부모용 리프레시가 필요하면 토큰에 userType/subject 구분을 추가해 분기하세요.
+     */
+    public TokenDto refreshAccessToken(String refreshToken) {
+        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
+            throw new IllegalArgumentException("Invalid refresh token");
+        }
+
+        Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+        ChildUser child = childUserRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found for refresh token"));
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(child);
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(child); // 회전(rotate) 전략
+
+        ChildUserDto childDto = new ChildUserDto(
+                child.getId(),
+                child.getUserId(),
+                child.getName(),
+                child.getGender(),
+                child.getBirth(),
+                child.getPhone(),
+                child.getPictureUrl(),
+                child.getVoiceUrl(),
+                child.getState()
+        );
+
+        return new TokenDto(
+                newAccessToken,
+                newRefreshToken,
+                3600L,
+                UserType.CHILD,
+                childDto
+        );
+    }
+
+    private static String nullToEmpty(String s) { return s == null ? "" : s; }
+
+    /* ===================== Kakao API 응답 매핑 DTO ===================== */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class KakaoMeResponse {
+        public long id;
+        @JsonProperty("properties")
+        public Properties properties;
+        @JsonProperty("kakao_account")
+        public KakaoAccount kakaoAccount;
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        static class Properties {
+            public String nickname;
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        static class KakaoAccount {
+            public String email;
+            public String birthday;   // MMDD
+            public String birthyear;  // YYYY
+        }
+    }
+
+//    /* ===================== (선택) 카카오 생일 → LocalDate 유틸 ===================== */
+//    @SuppressWarnings("unused")
+//    private static LocalDate toLocalDateFromKakaoBirth(String birthyear, String birthday) {
+//        if (birthyear == null || birthday == null || birthday.length() != 4) return null;
+//        try {
+//            int year = Integer.parseInt(birthyear);
+//            int month = Integer.parseInt(birthday.substring(0, 2));
+//            int day = Integer.parseInt(birthday.substring(2, 4));
+//            return LocalDate.of(year, month, day);
+//        } catch (Exception e) {
+//            return null;
+//        }
+//    }
+}
