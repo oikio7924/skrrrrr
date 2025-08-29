@@ -27,7 +27,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:8081/api/auth/oauth/kakao/callback", {
+    const res = await fetch("http://localhost:8080/api/auth/oauth/kakao/callback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, redirectUri, state }),
@@ -47,7 +47,7 @@ onMounted(async () => {
 
     const data: TokenDto = await res.json();
 
-    localStorage.setItem("access_token", data.accessToken);
+    localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refresh_token", data.refreshToken);
 
     router.replace(data.user?.needAdditionalInfo ? "/signup/child" : "/signup");

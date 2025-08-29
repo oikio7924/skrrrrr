@@ -212,7 +212,7 @@ async function startSocialSignup(provider: Provider) {
     if (!token) throw new Error("카카오 토큰 없음");
 
     // 3. 백엔드 서버에 토큰을 보내 JWT와 자녀 ID를 요청합니다.
-    const res = await fetch("http://localhost:8081/api/auth/social-login", {
+    const res = await fetch("http://localhost:8080/api/auth/social-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
