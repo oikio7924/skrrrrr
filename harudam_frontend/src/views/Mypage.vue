@@ -72,7 +72,7 @@
         <li class="info-item" @click="$router.push({ name: 'ChildVoiceTraining' })">
           자녀 AI 목소리 설정
         </li>
-        <li class="info-item" @click="$router.push({ name: 'child-character' })">
+        <li class="info-item" @click="$router.push({ name: 'ChildCharacter' })">
           자녀 AI 캐릭터 변경
         </li>
       </ul>
