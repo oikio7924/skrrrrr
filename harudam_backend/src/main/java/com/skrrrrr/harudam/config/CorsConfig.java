@@ -14,7 +14,13 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of("http://localhost:5173"));
+        c.setAllowedOrigins(List.of(
+        		"http://localhost:5173",
+        		"http://localhost:8080",
+        		"http://211.188.50.87",
+        		"http://211.188.50.87:5173",
+        		"http://211.188.50.87:8080",        		
+        		"https://harudam.smhrd.com"));
         c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         c.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Accept"));
         c.setExposedHeaders(List.of("Authorization","Content-Type"));
