@@ -19,18 +19,22 @@ public class AutobiographyController {
     private final ParentUserRepository parentUserRepository;
 
     /**
-     * ✅ 자서전 생성 및 조회 (대화 원본 기반)
+     * ✅ 자서전 조회 (자녀 전용)
+     * GET /api/autobiography/{childId}
      */
     @GetMapping("/{childId}")
     public ResponseEntity<ApiResponse<AutobiographyDto>> getAutobiography(
             @PathVariable Long childId,
             @AuthenticationPrincipal User principal) {
 
+        // 로그인한 부모 ID (JWT 기반)
         Long parentId = Long.valueOf(principal.getUsername());
+
         ParentUser parent = parentUserRepository.findById(parentId)
                 .orElseThrow(() -> new IllegalArgumentException("부모 없음"));
 
         AutobiographyDto dto = autobiographyService.buildFromConversations(parent, childId);
+
         return ResponseEntity.ok(ApiResponse.ok("AUTOBIOGRAPHY", dto));
     }
 }

@@ -70,4 +70,15 @@ public class AiApiClient {
         file.transferTo(convFile);
         return convFile;
     }
+
+     public String callImage(String prompt) {
+        Map response = webClient.post()
+                .uri("/image")
+                .body(BodyInserters.fromFormData("prompt", prompt))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+        return response != null ? response.get("imageUrl").toString() : null;
+    }
 }
