@@ -36,18 +36,21 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // ✅ 소셜 로그인 관련
-                .requestMatchers("/api/auth/**").permitAll()
-                // ✅ 테스트용
-                .requestMatchers("/api/test/**").permitAll()
-                // 파일 업로드용
-                .requestMatchers("/api/files/**").permitAll()
-                // ✅ 휴대폰 인증 (childId 있는 경우/없는 경우 모두 허용)
-                .requestMatchers("/api/verification/**").permitAll()
-                
-                .requestMatchers("/api/send-verification-code",
-                                 "/api/send-verification-signup",                    
-                                 "/api/verify-code").permitAll()
+                // 인증 필요없는 API
+                .requestMatchers(
+                		"/api/**",
+                		"/api/auth/**",
+                		"/api/test/**",
+                		"/api/files/**",
+                		"/api/verification/**",
+                		"/api/child/**",
+                		"/api/parent/**",
+                		"/actuator/**",
+                		"/api/send-verification-code",
+                        "/api/send-verification-signup",
+                        "/api/verify-code"
+                		).permitAll()
+
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
             )
