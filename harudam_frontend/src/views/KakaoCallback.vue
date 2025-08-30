@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import http from '@/api/http'
 
 const route = useRoute();
 const router = useRouter();
@@ -27,17 +28,19 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:8080/api/auth/oauth/kakao/callback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, redirectUri, state }),
+    const res = await http.post('/auth/oauth/kakao/callback', {
+      code,
+      redirectUri,
+      state,
     });
 
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(`백엔드 오류: ${res.status} ${t}`);
+    // Axios에서는 res.status로 상태 코드 체크
+    if (res.status !== 200) {
+      const errorMsg = res.data?.message || "백엔드 오류";
+      throw new Error(`백엔드 오류: ${res.status} ${errorMsg}`);
     }
 
+    // 서버 응답 데이터를 그대로 사용
     type TokenDto = {
       accessToken: string;
       refreshToken: string;
@@ -45,13 +48,16 @@ onMounted(async () => {
       user: { id: number; email: string | null; name: string | null; needAdditionalInfo: boolean };
     };
 
-    const data: TokenDto = await res.json();
+    const data: TokenDto = res.data;
 
+    // 로컬 스토리지에 액세스 토큰 저장
     localStorage.setItem("accessToken", data.accessToken);
-    localStorage.setItem("refresh_token", data.refreshToken);
+    localStorage.setItem("refreshToken", data.refreshToken);
 
+    // 추가 정보가 필요한 경우 해당 페이지로 이동
     router.replace(data.user?.needAdditionalInfo ? "/signup/child" : "/signup");
   } catch (e: unknown) {
+    // 에러 메시지 처리
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
     loading.value = false;

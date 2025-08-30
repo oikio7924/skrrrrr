@@ -28,6 +28,7 @@
 <script setup>
 import { ref, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import http from '@/api/http'
 
 const childFaceImage = new URL('@/assets/child/child-face.png', import.meta.url).href
 
@@ -144,13 +145,21 @@ async function startRealtimeChat(){
   // 세션 발급 & 마이크 병렬
   const sessionPromise = (async () => {
     const qs = new URLSearchParams({ user_id: userId })
-    const resp = await fetch(`/api/session?${qs.toString()}`)
-    if (!resp.ok) throw new Error(`session http ${resp.status} ${await resp.text()}`)
-    const sess = await resp.json()
-    EPHEMERAL = sess?.client_secret?.value
-    if (!EPHEMERAL) throw new Error('no ephemeral in session')
-    window.__todayTopics = Array.isArray(sess.today_topics) ? sess.today_topics : []
+
+    try {
+      const { data } = await http.post('/api/session', null, { params: qs })
+      EPHEMERAL = data?.client_secret?.value
+
+      if (!EPHEMERAL) {
+        throw new Error('no ephemeral in session')
+      }
+
+      window.__todayTopics = Array.isArray(data.today_topics) ? data.today_topics : []
+    } catch (error) {
+      console.error("Session fetch error", error)
+    }
   })()
+
   const micPromise = navigator.mediaDevices.getUserMedia({
     audio: {
       channelCount: 1, sampleRate: 48000,
@@ -321,11 +330,11 @@ async function finishAndUpload(reason = 'manual') {
     recorder.stop(); await stopped
     const blob = new Blob(chunks, { type: 'audio/webm' })
     if (!blob.size) return
-    const form = new FormData()
-    form.append('user_id', userId)
-    form.append('day', day)
-    form.append('file', blob, `${day}.webm`)
-    const r = await fetch('/api/audio/upload', { method: 'POST', body: form })
+
+    const { data } = await http.post('/audio/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
     if (!r.ok) { const t = await r.text().catch(() => ''); console.error('upload failed', r.status, t) }
   } catch (e) { console.error(e) } finally { chunks = [] }
 }

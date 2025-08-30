@@ -184,7 +184,7 @@ function handleKakaoLogin() {
         // 1. 실제 백엔드 API 호출을 주석 처리합니다. (CORS 에러 방지)
         /*
         const { data } = await apiClient.post<LoginRes>('/auth/oauth/kakao', {
-          accessToken: kakaoAuth.access_token,
+          accessToken: kakaoAuth.accessToken,
         });
         */
 

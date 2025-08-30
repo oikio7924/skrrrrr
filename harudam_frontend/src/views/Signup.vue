@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
+import http from '@/api/http'
 // import api from '@/api'
 
 /** ===== 타입 정의 ===== */
@@ -79,7 +80,7 @@ type SocialProfile = {
 };
 
 interface KakaoAuthResponse {
-  access_token: string;
+  accessToken: string;
 }
 interface KakaoUserInfo {
   id: number;
@@ -180,6 +181,7 @@ onMounted(async () => {
 });
 
 /** ===== 카카오 로그인 핸들러 ===== */
+
 async function startSocialSignup(provider: Provider) {
   if (provider !== "kakao") return;
 
@@ -195,10 +197,12 @@ async function startSocialSignup(provider: Provider) {
     const kakao = getKakao();
     if (!kakao) throw new Error("Kakao SDK 없음");
 
-    // 1. 카카오 로그인 팝업을 띄우고 사용자의 로그인을 기다립니다.
+    // 1. 기존 로그인 세션이 있다면 초기화
     if (kakao.Auth.getAccessToken()) {
       await new Promise<void>((resolve) => kakao.Auth.logout(() => resolve()));
     }
+
+    // 2. 카카오 로그인 시도
     await new Promise<void>((resolve, reject) => {
       kakao.Auth.login({
         scope: "account_email,profile_nickname",
@@ -207,41 +211,29 @@ async function startSocialSignup(provider: Provider) {
       });
     });
 
-    // 2. 로그인 성공 후 내부적으로 저장된 액세스 토큰을 가져옵니다.
+    // 3. 액세스 토큰 추출
     const token = kakao.Auth.getAccessToken();
     if (!token) throw new Error("카카오 토큰 없음");
 
-    // 3. 백엔드 서버에 토큰을 보내 JWT와 자녀 ID를 요청합니다.
-    const res = await fetch("http://localhost:8080/api/auth/social-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: "KAKAO",
-        code: token,
-      }),
+    // 4. 백엔드에 전달
+    const resp = await http.post('/auth/social-login', {
+      provider: "KAKAO",
+      code: token,
     });
 
-    if (!res.ok) {
-      throw new Error(`백엔드 응답 오류: ${res.status}`);
-    }
+    const data = resp.data; // Spring Boot 응답 구조: { data: {...} }일 수 있음
 
-    // 4. 백엔드로부터 받은 JSON 응답을 파싱합니다.
-    const response = await res.json();
-    const data = response.data; // 실제 데이터는 'data' 객체 안에 들어있습니다.
-
-    // 5. 실제 데이터 구조에 맞춰 'user' 객체에서 자녀 ID를 추출합니다.
-    const newChildId = data.user?.id;
-
-    // 6. 추출한 자녀 ID가 유효한지 최종 확인합니다.
-    if (!newChildId) {
-      throw new Error("서버 응답에서 유효한 자녀 ID(data.user.id)를 찾지 못했습니다.");
-    }
-
-    // 7. 받은 토큰들을 로컬 스토리지에 저장합니다.
+    // 5. 토큰 저장
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
 
-    // 8. 유효한 자녀 ID를 가지고 다음 페이지로 이동합니다.
+    // 6. 자녀 ID 추출
+    const newChildId = data.user?.id;
+    if (!newChildId) {
+      throw new Error("서버 응답에서 자녀 ID(data.user.id)를 찾지 못했습니다.");
+    }
+
+    // 7. 페이지 이동
     router.push({ path: `/signupdetail_child/${newChildId}` });
 
     console.log("카카오 로그인 + 백엔드 연동 성공");

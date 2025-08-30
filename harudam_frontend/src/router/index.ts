@@ -25,17 +25,17 @@ import Signup_Complete from '@/views/Signup_Complete.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/', // 앱 첫 화면 온보딩화면
-      redirect: { name: 'Onboarding' },
-    },
+    // {
+    //   path: '/', // 앱 첫 화면 온보딩화면
+    //   redirect: { name: 'Onboarding' },
+    // },
     {
       path: '/notification',
       name: 'Notification',
       component: Notification,
     },
     {
-      path: '/onboarding',
+      path: '/',
       name: 'Onboarding',
       component: () => Onboarding,
     },

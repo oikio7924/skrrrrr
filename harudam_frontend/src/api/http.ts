@@ -1,23 +1,22 @@
 import axios from 'axios'
 import type { InternalAxiosRequestConfig } from 'axios'
 
+// Vite 환경변수에서 API 서버 주소 불러오기
+const baseURL = import.meta.env.VITE_API_BASE_URL
+
 export const http = axios.create({
-  // 서버 주소를 올바른 8081 포트로 직접 수정합니다.
-  baseURL: 'http://localhost:8081',
+  baseURL: baseURL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: false,
+  withCredentials: false, // CORS에서 쿠키 인증이 필요 없으므로 false
 })
 
-// 요청 인터셉터 추가
+// 요청 인터셉터: 토큰 자동 추가
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('access_token')
-
-  // 모든 요청에 토큰을 붙이도록 수정
+  const token = localStorage.getItem('accessToken')
   if (token) {
     config.headers = config.headers || {}
     config.headers['Authorization'] = `Bearer ${token}`
   }
-
   return config
 })
 

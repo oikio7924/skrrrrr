@@ -13,7 +13,7 @@ const apiClient = axios.create({
 // 요청 인터셉터
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("access_token"); // 토큰 키 확인!
+    const token = localStorage.getItem("accessToken"); // 토큰 키 확인!
     if (token) {
       // ✅ 개별 속성으로 추가해야 함
       config.headers = config.headers || {};
