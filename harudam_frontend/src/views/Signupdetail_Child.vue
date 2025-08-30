@@ -293,7 +293,7 @@ async function sendSMS() {
 
   try {
     // fetch 대신 http.post를 사용합니다.
-    // http 인스턴스가 .env 파일에 설정된 baseURL('http://localhost:8081')을 자동으로 붙여줍니다.
+    // http 인스턴스가 .env 파일에 설정된 baseURL을 자동으로 붙여줍니다.
     const { data } = await http.post('/api/verification/send-child', payload);
 
     if (data.success) {
