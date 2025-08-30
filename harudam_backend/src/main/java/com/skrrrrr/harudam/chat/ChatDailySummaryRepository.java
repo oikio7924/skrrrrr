@@ -17,4 +17,7 @@ public interface ChatDailySummaryRepository extends JpaRepository<ChatDailySumma
     List<ChatDailySummary> findByChildUser_IdAndSummaryDateBetweenOrderBySummaryDateAsc(
             Long childId, LocalDate start, LocalDate end
     );
+
+    List<ChatDailySummary> findByParentUser_IdAndChildUser_IdAndSummaryDateBetweenOrderBySummaryDateAsc(
+            Long parentId, Long childId, LocalDate startDate, LocalDate endDate);
 }

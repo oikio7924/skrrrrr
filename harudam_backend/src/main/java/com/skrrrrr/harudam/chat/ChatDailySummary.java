@@ -45,5 +45,8 @@ public class ChatDailySummary {
 
     @Enumerated(EnumType.STRING)
     private EmotionWord emotion;
+
+    @Column(length = 500)
+    private String generatedImageUrl;
 }
 

@@ -5,7 +5,6 @@ import com.skrrrrr.harudam.member.ChildUser;
 import com.skrrrrr.harudam.member.ChildUserRepository;
 import com.skrrrrr.harudam.member.ParentUser;
 import com.skrrrrr.harudam.member.ParentUserRepository;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -48,31 +47,37 @@ public class ChatSummaryService {
         String conversation = sb.toString();
 
         // 3. AI 요약 생성
-        String summaryText = aiApiClient.callOpenAi("다음 대화를 하루 일기로 3~4줄로 요약해줘:\n" + conversation);
+        String summaryText = aiApiClient.callOpenAi(
+            "다음 대화를 하루 일기로 3~4줄로 요약해줘:\n" + conversation
+        );
 
-        // 4. 감정 분석 (여기서는 단순히 키워드 매핑, 실제로는 별도 API 호출 가능)
+        // 4. 감정 분석 (간단 매핑, 실제로는 AI API 호출 가능)
         EmotionWord emotion = detectEmotion(conversation);
 
-        // 5. 저장 (이미 있으면 업데이트)
+        // 5. 그림일기 이미지 생성 (요약 텍스트 기반)
+        String imageUrl = aiApiClient.callImage(summaryText);
+
+        // 6. 저장 (이미 있으면 업데이트)
         ParentUser parentRef = parentUserRepository.getReferenceById(parentId);
         ChildUser childRef = childUserRepository.getReferenceById(childId);
 
         ChatDailySummary summary = chatDailySummaryRepository
                 .findByParentUser_IdAndChildUser_IdAndSummaryDate(parentId, childId, targetDate)
                 .orElse(ChatDailySummary.builder()
-                        .parentUser(parentRef) // 엔티티 참조 대신 Proxy만 생성
+                        .parentUser(parentRef)
                         .childUser(childRef)
                         .summaryDate(targetDate)
                         .build());
 
         summary.setSummaryText(summaryText);
         summary.setEmotion(emotion);
+        summary.setGeneratedImageUrl(imageUrl);
 
         return chatDailySummaryRepository.save(summary);
     }
 
     /**
-     * 간단 감정 감지 (실제는 AI로 대체 가능)
+     * 간단 감정 감지 (실제로는 OpenAI로 대체 가능)
      */
     private EmotionWord detectEmotion(String text) {
         if (text.contains("행복") || text.contains("기뻐")) return EmotionWord.HAPPY;
