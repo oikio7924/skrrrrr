@@ -1,9 +1,11 @@
 package com.skrrrrr.harudam.chat;
 
 import com.skrrrrr.harudam.member.ParentUser;
-import com.skrrrrr.harudam.common.enums.SenderType;
 import com.skrrrrr.harudam.member.ChildUser;
+import com.skrrrrr.harudam.common.enums.*;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,14 +13,16 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.ZonedDateTime;
 
-/**
- * 부모 ↔ AI 페르소나 대화 원본 로그
- */
 @Entity
 @Table(name = "chat_message")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ChatMessage {
+
+    public enum SenderType { USER, BOT }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,13 +38,13 @@ public class ChatMessage {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private SenderType senderType;  // USER(부모) / BOT(AI)
+    private SenderType senderType;
 
     @Column(nullable = false, length = 2000)
-    private String content;         // 텍스트 내용
+    private String content;
 
-    private String voiceFilePath;   // 부모 발화 원본 음성 파일 경로
-    private String ttsFilePath;     // AI 응답 음성 파일 경로
+    private String voiceFilePath;
+    private String ttsFilePath;
 
     @CreationTimestamp
     @Column(updatable = false)

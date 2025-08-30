@@ -4,6 +4,8 @@ import com.skrrrrr.harudam.member.ParentUser;
 import com.skrrrrr.harudam.common.enums.EmotionWord;
 import com.skrrrrr.harudam.member.ChildUser;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,9 +17,12 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(name = "chat_daily_summary",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"parent_id", "child_id", "summaryDate"}))
-@Getter @Setter
+       uniqueConstraints = @UniqueConstraint(columnNames = {"parent_id","child_id","summaryDate"}))
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ChatDailySummary {
 
     @Id
@@ -33,10 +38,12 @@ public class ChatDailySummary {
     private ChildUser childUser;
 
     @Column(nullable = false)
-    private LocalDate summaryDate;   // ex) 2025-08-30
+    private LocalDate summaryDate;
 
     @Column(columnDefinition = "TEXT")
-    private String summaryText;      // 하루 대화 요약 (그림일기 내용)
+    private String summaryText;
 
-    private EmotionWord emotion;          // happy/neutral/sad... (Timeline 색깔 표시용)
+    @Enumerated(EnumType.STRING)
+    private EmotionWord emotion;
 }
+
