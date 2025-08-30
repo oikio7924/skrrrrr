@@ -88,7 +88,7 @@ const router = createRouter({
         {
           path: 'day/:date',
           name: 'dayModal',
-          component: () => DiaryDetail,
+          component: () => import('@/views/DiaryDetail.vue'),
           props: true,
           meta: { modal: true }, // ← 모달 표시 플래그
         },
