@@ -359,7 +359,6 @@ function removePhoto() {
 // 최종 제출 (수정 제안)
 // 최종 제출 함수
 async function onSubmit() {
-  // 1. 유효성 검사 (기존 코드와 동일)
   if (!valid.name) { touched.name = true; alert('이름을 확인해주세요.'); return }
   if (!valid.phone) { touched.phone = true; alert('휴대폰 번호를 확인해주세요.'); return }
   if (!codeVerified.value) { alert('휴대폰 인증을 먼저 완료해주세요.'); return }
@@ -368,15 +367,17 @@ async function onSubmit() {
 
   submitting.value = true
   try {
-    // 2. 파일과 JSON 데이터를 한 번에 보낼 FormData 객체 생성
-    const formData = new FormData();
+    let pictureUrl = '';
 
-    // 3. 사진 파일이 있다면 'file'이라는 키로 FormData에 추가
+    // 1) 부모 사진 업로드 (선택)
     if (form.photo) {
-      formData.append('file', form.photo);
+      const photoForm = new FormData();
+      photoForm.append('file', form.photo);
+      const { data } = await http.post(`/api/files/parent/${childIdForVerification.value}/picture`, photoForm);
+      pictureUrl = data.path; // 서버에서 반환한 저장 경로
     }
 
-    // 4. 나머지 JSON 데이터를 'requestDto'라는 키로 FormData에 추가
+    // 2) 부모 회원가입 JSON 요청
     const genderMap: Record<'M' | 'F', 'MALE' | 'FEMALE'> = { M: 'MALE', F: 'FEMALE' };
     const requestDto = {
       name: form.name,
@@ -385,13 +386,11 @@ async function onSubmit() {
       phone: phoneDigits.value,
       addr1: form.addr1 || '',
       addr2: form.addr2 || '',
+      pictureUrl,
       childId: childIdForVerification.value
     };
-    // DTO 객체를 JSON 문자열로 변환 후 Blob 객체로 감싸서 추가
-    formData.append('requestDto', new Blob([JSON.stringify(requestDto)], { type: "application/json" }));
 
-    // 5. 단 한 번의 API 호출로 모든 데이터를 전송
-    const { data } = await http.post('/api/parent/signup', formData);
+    const { data } = await http.post('/api/parent/signup', requestDto);
 
     if (data.success) {
       alert('회원가입이 완료되었습니다.');
@@ -399,7 +398,6 @@ async function onSubmit() {
     } else {
       alert(data.message || '회원가입에 실패했습니다.');
     }
-
   } catch (e: any) {
     console.error(e);
     alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.');
@@ -407,6 +405,7 @@ async function onSubmit() {
     submitting.value = false;
   }
 }
+
 
 
 /* 언마운트 시 정리 */

@@ -15,14 +15,12 @@
                 <h2 id="sec1" class="sr-only">회원 정보 입력</h2>
 
                 <label class="row">
-                  <span class="label">아이디(이메일)</span>
+                  <span class="label">아이디</span>
                   <div class="field">
-                    <input v-model.trim="form.email" type="email" inputmode="email" placeholder="아이디 or 이메일 입력"
-                      :readonly="!!prefilled.email" autocomplete="email" />
-                    <button class="micro-btn" type="button" @click="checkEmail" :disabled="!form.email">
-                      중복확인
-                    </button>
+                    <!-- localStorage 직접 호출 ❌ / Vue ref 사용 ⭕ -->
+                    <input type="text" :value="childSocialId" readonly />
                   </div>
+                  <p class="hint">카카오/네이버/구글 로그인 ID가 자동으로 사용됩니다.</p>
                 </label>
 
                 <label class="row">
@@ -217,13 +215,14 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { uploadChildPicture, uploadChildVoice } from '@/api/files'
 import http from '@/api/http';
-const router = useRouter()
 
+const router = useRouter()
 const route = useRoute()
 
-// 자녀 ID: 라우트 파라미터(:childId) → 없으면 localStorage('childId') → 없으면 0
+const childSocialId = ref(localStorage.getItem('childSocialId') || '')
+
+/** 자녀 PK (파일 업로드용) */
 const childIdForVerification = computed(() =>
   Number(route.params.childId || localStorage.getItem('childId') || 0)
 )
@@ -496,9 +495,9 @@ const allAgreed = computed({
  * ────────────────────────────*/
 // submit 함수 전체를 아래 코드로 바꿔보세요.
 
+/** 제출 */
+/** 제출 */
 async function submit() {
-  // 1) 클라이언트 검증 (기존과 동일)
-  if (!form.email) { alert('아이디(이메일)를 입력해주세요.'); return }
   if (!passwordsOk.value) { alert('비밀번호를 확인해주세요.'); return }
   if (!form.name) { alert('이름을 입력해주세요.'); return }
   if (!form.birthday) { alert('생년월일을 입력해주세요.'); return }
@@ -507,52 +506,39 @@ async function submit() {
   if (!form.phoneVerified) { alert('휴대폰 인증을 완료해주세요.'); return }
   if (!requiredAgreed.value) { alert('필수 약관에 동의해주세요.'); return }
 
+  // ✅ 백엔드 ChildSignupReq DTO랑 맞춤
+  const signupDto = {
+    childId: childIdForVerification.value || null,
+    userId: childSocialId.value || '',
+    password: form.password || '',
+    name: form.name,
+    gender: form.gender,   // ✅ 그대로 "M" / "F"
+    birth: form.birthday ? form.birthday.substring(0, 10) : null,
+    phone: form.phone,
+    addr1: form.address || '',
+    addr2: form.addressDetail || '',
+    pictureUrl: '',   // null 대신 "" 로 보내는 게 안전
+    voiceUrl: ''      // 마찬가지
+  }
+  console.log("📌 최종 signupDto:", JSON.stringify(signupDto, null, 2))
+
   try {
-    // 2) 파일과 JSON 데이터를 한 번에 보낼 FormData 생성
-    const formData = new FormData();
-
-    // 3) 파일 추가
-    if (form.childPhoto) {
-      formData.append('pictureFile', form.childPhoto);
-    }
-    if (form.childVoice) {
-      const voiceFile = new File([form.childVoice], 'voice.wav', { type: 'audio/wav' });
-      formData.append('voiceFile', voiceFile);
-    }
-
-    // 4) 나머지 JSON 데이터 추가
-    const genderMap: Record<'M' | 'F', 'MALE' | 'FEMALE'> = { M: 'MALE', F: 'FEMALE' };
-    const signupDto = {
-      userId: form.email,
-      password: form.password || '',
-      name: form.name,
-      gender: genderMap[form.gender],
-      birth: form.birthday,
-      phone: phoneDigits.value,
-      addr1: form.address || '',
-      addr2: form.addressDetail || '',
-    };
-    // DTO 객체를 'signupData'라는 이름의 Blob(덩어리)으로 변환하여 추가
-    formData.append('signupData', new Blob([JSON.stringify(signupDto)], { type: "application/json" }));
-
-    // 5) 단 한 번의 API 호출로 모든 데이터 전송
-    const { data } = await http.post('/api/child/signup-with-files', formData, {
-      headers: {
-        // FormData를 보낼 때는 Content-Type을 설정하지 않아도 브라우저가 자동으로 'multipart/form-data'로 지정해줍니다.
-      },
-    });
+    const { data } = await http.post('/api/child/signup', signupDto)
 
     if (data?.success) {
-      alert('회원가입이 완료되었습니다.');
-      router.push({ name: 'signupcomplete' });
+      alert('회원가입이 완료되었습니다.')
+      router.push({ name: 'Signupdetail_parent' }) // ✅ 성공 시 부모 페이지 이동
     } else {
-      alert(data?.message || '회원가입에 실패했습니다.');
+      alert(data?.message || '회원가입에 실패했습니다.')
     }
-  } catch (e: any) {
-    console.error(e);
-    alert(e?.response?.data?.message || '회원가입 중 오류가 발생했습니다.');
+  } catch (err: any) {
+    console.error("❌ 회원가입 요청 실패:", err)
+    alert(err?.response?.data?.message || '회원가입 중 오류가 발생했습니다.')
   }
 }
+
+
+
 
 
 

@@ -28,5 +28,5 @@ if (typeof window !== 'undefined') (window as any).ui = ui
 
 <style>
 /* 기존 스타일 유지 */
-body { padding-bottom: 100px; }
+/* body { padding-bottom: 100px; } */
 </style>

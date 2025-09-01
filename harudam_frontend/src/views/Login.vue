@@ -1,11 +1,14 @@
 <template>
-  <div class="login-container">
+  <div class="page-root">
+    <!-- 헤더 -->
     <header class="header">
       <button class="back-button" @click="goBack" aria-label="뒤로가기">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
       </button>
     </header>
-
     <main class="main-content">
       <div class="logo-wrap">
         <img src="@/assets/Harudam_logo.png" alt="하루담 로고" class="logo" />
@@ -19,7 +22,12 @@
         <div class="input-group">
           <input :type="showPw ? 'text' : 'password'" v-model="password" placeholder="패스워드" required />
           <button type="button" class="eye" @click="showPw = !showPw" aria-label="비밀번호 보기 토글">
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle :fill="showPw?'currentColor':'none'" :stroke="showPw?'none':'currentColor'" cx="12" cy="12" r="3" stroke-width="1.5"/></svg>
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" fill="none" stroke="currentColor"
+                stroke-width="1.5" />
+              <circle :fill="showPw ? 'currentColor' : 'none'" :stroke="showPw ? 'none' : 'currentColor'" cx="12"
+                cy="12" r="3" stroke-width="1.5" />
+            </svg>
           </button>
         </div>
 
@@ -249,35 +257,238 @@ function goBack() {
 </script>
 
 <style scoped>
-/* 기존 스타일 유지 + 눈아이콘 위치 고정 */
-.login-container{ max-width:420px; margin:0 auto; padding:20px; color:#333; }
-.header{ position:relative; height:44px; display:flex; align-items:center; }
-.back-button{ background:none; border:none; cursor:pointer; padding:10px; position:absolute; left:-10px; }
-.main-content{ display:flex; flex-direction:column; align-items:center; padding-top:40px; }
-.logo-wrap{ display:flex; flex-direction:column; align-items:center; margin-bottom:30px; }
-.logo{ width:120px; height:auto; }
-.logo-text{ margin-top:5px; font-size:60px; font-weight:400; color:#A993E8; font-family:'Dongle', sans-serif; }
-form{ width:100%; }
-.input-group{ position:relative; margin-bottom:12px; }
-.input-group input{ width:100%; padding:14px 40px 14px 14px; border:1px solid #e0e0e0; border-radius:10px; font-size:16px; }
-.input-group .eye{ position:absolute; top:50%; right:10px; transform:translateY(-50%); border:0; background:transparent; padding:6px; cursor:pointer; color:#666; }
-.options{ display:flex; align-items:center; margin:10px 0 18px; }
-.checkbox-label{ display:flex; align-items:center; cursor:pointer; font-size:14px; color:#555; }
-.checkbox-label input{ margin-right:8px; }
-.login-button{ width:100%; padding:14px; background:#A993E8; color:#fff; border:0; border-radius:10px; font-size:17px; font-weight:700; cursor:pointer; transition:background .2s; }
-.login-button:hover{ background:#9378d5; }
-.login-button:disabled{ opacity:.6; cursor:not-allowed; }
-.error{ margin-top:10px; color:#e04545; font-size:14px; text-align:center; }
-.links{ margin-top:16px; display:flex; gap:10px; font-size:14px; color:#777; justify-content:center; }
-.links a{ color:inherit; text-decoration:none; }
-.links a:hover{ text-decoration:underline; }
-.separator{ color:#ddd; }
-.social-login{ margin-top:32px; display:flex; gap:16px; }
-.social-btn{ width:50px; height:50px; border-radius:50%; border:1px solid #eee; display:flex; justify-content:center; align-items:center; cursor:pointer; background:#fff; transition:opacity .2s; }
-.social-btn:hover{ opacity:.85; }
-.social-btn img{ width:28px; height:28px; object-fit:contain; }
-.social-btn.kakao{ background:#FEE500; border:none; }
-.social-btn.naver{ background:#03C75A; border:none; }
-.social-btn.apple{ background:#000; border:none; }
-.social-btn.google{ background:#fff; }
+.page-root {
+  display: flex;
+  justify-content: center;  /* 가운데 정렬 */
+  background: #fff;
+}
+
+.page-root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100vw, 420px);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #fff;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+/* 수정 후 */
+.main-content {
+  width: min(100vw, 420px);
+  margin: 56px auto 0;
+  padding: 24px;
+  box-sizing: border-box;
+  min-height: calc(100vh - 56px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  /* ✅ 이 코드를 추가하세요 */
+  padding-top: 10vh; /* 화면 높이의 10%만큼 위쪽 여백을 줌 */
+}
+
+/* 뒤로가기 버튼 */
+.back-button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.back-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.logo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.logo {
+  width: 120px;
+  height: auto;
+}
+
+.logo-text {
+  margin-top: 5px;
+  font-size: 60px;
+  font-weight: 400;
+  color: #A993E8;
+  font-family: 'Dongle', sans-serif;
+}
+
+form {
+  width: 100%;
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 40px 14px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.input-group .eye {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  cursor: pointer;
+  color: #666;
+}
+
+.options {
+  display: flex;
+  align-items: center;
+  margin: 10px 0 18px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+}
+
+.checkbox-label input {
+  margin-right: 8px;
+}
+
+.login-button {
+  width: 100%;
+  padding: 14px;
+  background: #A993E8;
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.login-button:hover {
+  background: #9378d5;
+}
+
+.login-button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.error {
+  margin-top: 10px;
+  color: #e04545;
+  font-size: 14px;
+  text-align: center;
+}
+
+.links {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  color: #777;
+  justify-content: center;
+}
+
+.links a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.links a:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  color: #ddd;
+}
+
+.social-login {
+  margin-top: 32px;
+  display: flex;
+  gap: 16px;
+}
+
+.social-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  background: #fff;
+  transition: opacity .2s;
+}
+
+.social-btn:hover {
+  opacity: .85;
+}
+
+.social-btn img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.social-btn.kakao {
+  background: #FEE500;
+  border: none;
+}
+
+.social-btn.naver {
+  background: #03C75A;
+  border: none;
+}
+
+.social-btn.apple {
+  background: #000;
+  border: none;
+}
+
+.social-btn.google {
+  background: #fff;
+}
+
+/* ✅ 이 코드를 CSS 하단에 추가하세요 */
+form {
+  width: 100%; /* 부모 너비를 따라가되, */
+  max-width: 320px; /* 최대 너비를 320px로 제한합니다. */
+}
 </style>

@@ -8,7 +8,6 @@
       <p class="subtitle">어떤 하루를 보내시고 계실까요?</p>
 
       <!-- 그림일기 카드 -->
-      <!-- 그림일기 카드 -->
       <section class="card" @click="goToDiaryFeed">
         <span class="badge">
           {{ diary ? formatDate(diary.date) + " 그림일기" : "그림일기" }}
@@ -43,8 +42,8 @@
         <button class="btn" @click="goToCalendar">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14
-                a2 2 0 002-2V7a2 2 0 00-2-2H5
-                a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  a2 2 0 002-2V7a2 2 0 00-2-2H5
+                  a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           달력
         </button>
@@ -52,9 +51,9 @@
         <button class="btn" @click="goToMemoir">
           <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5V6.5A2.5 2.5 0 016.5 4H20v15H6.5
-                A2.5 2.5 0 014 19.5z" />
+                  A2.5 2.5 0 014 19.5z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 4v15a2 2 0 01-2 2H6.5
-                a2.5 2.5 0 01-2.5-2.5" />
+                  a2.5 2.5 0 01-2.5-2.5" />
           </svg>
           자서전
         </button>
@@ -69,7 +68,8 @@
         </div>
         <ul class="schedule-list">
           <li v-if="events.length === 0" class="schedule-item-empty">등록된 일정이 없어요.</li>
-          <li v-for="event in events.slice(-3)" :key="event.id" class="schedule-item" @click="goToDetail(event.date)">
+          <li v-for="event in events.slice(-3)" :key="event.id" class="schedule-item"
+            @click="goToDetail(event.date)">
             <span class="date">{{ formatDate(event.date) }}</span>
             <span class="text">{{ event.title }}</span>
           </li>
@@ -191,52 +191,45 @@ export default defineComponent({
 
 
 <style>
-#app {
-  background: #f8fafc !important;
-  min-height: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.title {
-  font-weight: bold !important;
-}
-
+/*--- ✅ [수정] 전체 레이아웃 구조 정리 ---*/
+/* 브라우저 기본 스타일 초기화 */
 html,
 body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
-  overflow-y: auto;
   background: #f8fafc;
 }
 
-body {
-  margin: 0 !important;
-  padding: 0 !important;
-  background: #f8fafc !important;
+/* 앱 전체를 감싸는 캔버스 */
+#app {
+  width: 100%;
+  height: 100%;
 }
 
+/* 메인 컨테이너 (모바일 화면 크기 + 중앙 정렬) */
 .main-child {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-width: 720px;
-}
-
-#app {
-  display: flex;
-  justify-content: center;
+  position: relative;
   background: #f8fafc;
-  min-height: 100vh;
 }
 
+/* 실제 콘텐츠 영역 (가장 중요!) */
 .content {
   flex: 1;
-  width: 100%;
-  max-width: 720px;
-  padding: 20px;
-  padding-top: 100px;
-  padding-bottom: 100px;
+  overflow-y: auto;
+  /* ✅ [수정] padding-top 값을 줄여서 헤더와의 간격 조정 */
+  padding: 24px 20px 80px 20px;
+  box-sizing: border-box;
 }
+
+/* --- 이하 기존 디자인 스타일 유지 ---*/
 
 /* 제목 */
 .title {
@@ -481,3 +474,4 @@ body {
   transform: scale(0.98);
 }
 </style>
+

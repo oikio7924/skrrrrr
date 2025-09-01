@@ -94,7 +94,7 @@ import { useRouter } from 'vue-router'
 import micPng  from '@/assets/onboarding/1.png'
 import memoPng from '@/assets/onboarding/2.png'
 import bellPng from '@/assets/onboarding/3.png'
-import bookPng from '@/assets/onboarding/4.png'
+import bookPng from '@/assets/Harudam_logo.png'
 import aiPng   from '@/assets/onboarding/5.png'   // 👈 새로 추가(학습 페이지)
 
 const imgs = { mic: micPng, ai: aiPng, memo: memoPng, bell: bellPng, book: bookPng }

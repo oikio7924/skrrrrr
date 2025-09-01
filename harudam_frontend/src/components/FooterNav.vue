@@ -95,9 +95,11 @@ watch(
 .tabbar {
   position: fixed;
   bottom: 0;
-  left: 0;
+  left: 50%;
   width: 100%;
   z-index: 10;
+  max-width: 720px;
+  transform: translateX(-50%);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   background: #fff;
@@ -109,6 +111,8 @@ watch(
     0 -14px 36px rgba(20, 25, 45, .06);
   overflow: visible;
 }
+
+
 
 .tab {
   appearance: none;

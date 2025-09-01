@@ -1,97 +1,88 @@
 <template>
   <div class="mypage">
-    <!-- ✅ 헤더 -->
     <header class="mypage-header">
-      <!-- 로고+텍스트 전체를 클릭 가능하게 -->
       <div class="logo" @click="goHome">
         <img src="@/assets/Harudam_logo.png" alt="하루담 로고" />
         <span class="logo-text">하루담</span>
       </div>
-
-      <!-- 설정 버튼 -->
       <button class="settings-btn" @click="$router.push({ name: 'setting' })" aria-label="설정">
         <svg class="settings-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
           stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.52-.878 3.348.95
-               2.47 2.47a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924
-               0 3.35a1.724 1.724 0 00-1.066 2.573c.878 1.52-.95
-               3.348-2.47 2.47a1.724 1.724 0 00-2.573 1.066c-.426
-               1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.52.878-3.348-.95-2.47-2.47a1.724
-               1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924
-               0-3.35a1.724 1.724 0 001.066-2.573c-.878-1.52.95-3.348
-               2.47-2.47.996.575 2.229.146 2.573-1.066z" />
+                  2.47 2.47a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924
+                  0 3.35a1.724 1.724 0 00-1.066 2.573c.878 1.52-.95
+                  3.348-2.47 2.47a1.724 1.724 0 00-2.573 1.066c-.426
+                  1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.52.878-3.348-.95-2.47-2.47a1.724
+                  1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924
+                  0-3.35a1.724 1.724 0 001.066-2.573c-.878-1.52.95-3.348
+                  2.47-2.47.996.575 2.229.146 2.573-1.066z" />
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </button>
     </header>
 
-
-    <!-- 상단 프로필 -->
-    <div class="profile-section">
-      <div class="profile-photo">
-        <template v-if="user?.profileImage">
-          <img :src="user.profileImage" alt="프로필 이미지" class="photo-img" />
-        </template>
-        <template v-else>
-          사진
-        </template>
+    <main class="content">
+      <div class="profile-section">
+        <div class="profile-photo">
+          <template v-if="user?.profileImage">
+            <img :src="user.profileImage" alt="프로필 이미지" class="photo-img" />
+          </template>
+          <template v-else>
+            사진
+          </template>
+        </div>
+        <h2 class="profile-name">{{ user ? user.name : "이름 없음" }}</h2>
       </div>
-      <h2 class="profile-name">{{ user ? user.name : "이름 없음" }}</h2>
-    </div>
 
-    <!-- 상단 메뉴 (이모지 아이콘) -->
-    <div class="menu-bar">
-      <div class="menu-item" @click="$router.push({ name: 'authentication' })">
-        <span class="icon">🔑</span>
-        <span>인증코드</span>
+      <div class="menu-bar">
+        <div class="menu-item" @click="$router.push({ name: 'authentication' })">
+          <span class="icon">🔑</span>
+          <span>인증코드</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">📢</span>
+          <span>공지사항</span>
+        </div>
+        <div class="menu-item">
+          <span class="icon">🔔</span>
+          <span>알림</span>
+        </div>
       </div>
-      <div class="menu-item">
-        <span class="icon">📢</span>
-        <span>공지사항</span>
-      </div>
-      <div class="menu-item">
-        <span class="icon">🔔</span>
-        <span>알림</span>
-      </div>
-    </div>
 
-    <!-- 정보 -->
-    <section class="info-card">
-      <h3 class="section-title">정보</h3>
-      <ul>
-        <li class="info-item">내 정보 수정</li>
-        <li class="info-item">부모 정보 수정</li>
-        <li class="info-item">연동 계정</li>
-      </ul>
-    </section>
+      <section class="info-card">
+        <h3 class="section-title">정보</h3>
+        <ul>
+          <li class="info-item">내 정보 수정</li>
+          <li class="info-item">부모 정보 수정</li>
+          <li class="info-item">연동 계정</li>
+        </ul>
+      </section>
 
-    <!-- 자녀 설정 -->
-    <section class="info-card">
-      <h3 class="section-title">자녀 설정</h3>
-      <ul>
-        <li class="info-item" @click="$router.push({ name: 'ChildVoiceTraining' })">
-          자녀 AI 목소리 설정
-        </li>
-        <li class="info-item" @click="$router.push({ name: 'ChildCharacter' })">
-          자녀 AI 캐릭터 변경
-        </li>
-      </ul>
-    </section>
+      <section class="info-card">
+        <h3 class="section-title">자녀 설정</h3>
+        <ul>
+          <li class="info-item" @click="$router.push({ name: 'ChildVoiceTraining' })">
+            자녀 AI 목소리 설정
+          </li>
+          <li class="info-item" @click="$router.push({ name: 'ChildCharacter' })">
+            자녀 AI 캐릭터 변경
+          </li>
+        </ul>
+      </section>
 
-    <!-- 부모 설정 -->
-    <section class="info-card">
-      <h3 class="section-title">부모 설정</h3>
-      <ul>
-        <li class="info-item" @click="$router.push({ name: 'parent-voice' })">
-          부모 AI 목소리 설정
-        </li>
-        <li class="info-item" @click="$router.push({ name: 'parent-character' })">
-          부모 AI 캐릭터 변경
-        </li>
-      </ul>
-    </section>
+      <section class="info-card">
+        <h3 class="section-title">부모 설정</h3>
+        <ul>
+          <li class="info-item" @click="$router.push({ name: 'parent-voice' })">
+            부모 AI 목소리 설정
+          </li>
+          <li class="info-item" @click="$router.push({ name: 'parent-character' })">
+            부모 AI 캐릭터 변경
+          </li>
+        </ul>
+      </section>
+    </main>
 
-    <!-- FooterNav -->
     <FooterNav />
   </div>
 </template>
@@ -100,19 +91,18 @@
 import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import FooterNav from "@/components/FooterNav.vue"
-import apiClient from "@/api/index" // ✅ axios 인스턴스
+import apiClient from "@/api/index"
 
 type UserInfo = {
   id: number
   name: string
   email: string
-  profileImage?: string // ✅ 선택적 필드
+  profileImage?: string
 }
 
 const router = useRouter()
 const user = ref<UserInfo | null>(null)
 
-// ✅ 사용자 정보 불러오기
 const loadUserInfo = async () => {
   try {
     const { data } = await apiClient.get<UserInfo>("/api/users/me")
@@ -131,53 +121,41 @@ function goSettings() {
 }
 
 function goHome() {
-  router.push("/main_child") // ✅ 메인 페이지로 이동
+  router.push("/main_child")
 }
 </script>
 
 <style scoped>
 .mypage {
   width: 100%;
-  background: #f9f9fb;
-  min-height: 100vh;
-  padding-top: 70px;
-  /* 헤더 높이 */
-  padding-bottom: 6rem;
-  /* ✅ FooterNav 높이만큼 여백 확보 */
-  font-family: "Inter", sans-serif;
+  max-width: 720px;
+  margin: 0 auto;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  overflow-y: auto;
+  background: #f9f9fb;
+  font-family: "Noto Sans KR", sans-serif;
+  position: relative; /* ✅ FooterNav의 absolute 기준점을 위해 추가 */
 }
 
-/* ✅ 헤더 */
 .mypage-header {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  /* ✅ 공통 헤더 크기 */
   background: #fff;
-  border-bottom-left-radius: 12px;
-  /* ✅ 라운드 처리 */
-  border-bottom-right-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  /* ✅ 부드러운 그림자 */
-  position: fixed;
-  top: 0;
-  z-index: 100;
+  position: relative;
+  z-index: 10;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  /* ✅ 글씨랑 로고 사이 여백 확대 */
 }
 
-/* ✅ 헤더 스타일 */
 .logo img {
   width: 42px;
   height: 42px;
@@ -188,7 +166,6 @@ function goHome() {
   font-size: 1.8rem;
   font-weight: 700;
   color: #9a7dff;
-  /* ✅ 조금 더 부드러운 연보라 */
   line-height: 1;
   transform: translateY(6px);
 }
@@ -203,7 +180,6 @@ function goHome() {
   width: 34px;
   height: 34px;
   color: #9a7dff;
-  /* ✅ 로고색과 톤 맞춤 */
   transition: transform 0.2s ease, color 0.2s ease;
 }
 
@@ -212,12 +188,18 @@ function goHome() {
   color: #6d28d9;
 }
 
-/* 이하 기존 스타일 동일 */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 0;
+  /* ✅ [수정] FooterNav 높이(약 6rem) + 여백을 고려하여 충분히 여백 추가 */
+  padding-bottom: 7rem;
+}
+
 .profile-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 2rem;
   margin-bottom: 1rem;
 }
 
@@ -230,51 +212,41 @@ function goHome() {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  /* ✅ 이미지가 영역 넘치지 않게 */
+  border: 4px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .photo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* ✅ 원형 안에 꽉 차게 */
 }
 
 .profile-name {
   font-size: 1.2rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.edit-btn {
-  background: #ede9fe;
-  color: #6d28d9;
-  font-size: 0.8rem;
-  padding: 4px 12px;
-  border-radius: 20px;
-  border: none;
-  margin-top: 0.5rem;
-  cursor: pointer;
+  margin-top: 1rem;
 }
 
 .menu-bar {
   display: flex;
   justify-content: space-between;
+  /* ✅ [복원] 그라데이션 배경색 다시 추가 */
   background: linear-gradient(135deg, #e0d7ff, #c4b5fd);
   border-radius: 16px;
-  margin: 0.5rem auto 1.5rem;
+  margin: 1.5rem auto;
   padding: 14px;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .menu-item {
   flex: 1;
   text-align: center;
-  color: #fff;
+  color: #fff; /* ✅ 텍스트 색상을 흰색으로 변경 */
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -286,13 +258,14 @@ function goHome() {
 }
 
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.2); /* 호버 시 배경색 변경 */
+  color: #fff; /* 호버 시 텍스트 색상 유지 */
 }
 
 .icon {
   font-size: 1.6rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25)); /* 아이콘 그림자 유지 */
 }
 
 .info-card {
@@ -318,11 +291,12 @@ function goHome() {
 }
 
 .info-item {
-  padding: 10px 0;
+  padding: 12px 4px;
   font-size: 0.95rem;
-  border-bottom: 1px solid #f1f1f1;
+  border-bottom: 1px solid #f3f4f6;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.2s, background-color 0.2s;
+  border-radius: 4px;
 }
 
 .info-item:last-child {
@@ -331,5 +305,11 @@ function goHome() {
 
 .info-item:hover {
   color: #6d28d9;
+  background-color: #f9fafb;
+}
+
+/* FooterNav가 페이지 최하단에 위치하도록 z-index 조정 */
+:deep(.footer-nav) {
+  z-index: 20; /* 다른 콘텐츠 위에 표시되도록 z-index 높임 */
 }
 </style>

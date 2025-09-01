@@ -92,12 +92,12 @@ function goChild() { router.push({ name: CHILD_ROUTE }) }
 
 /* 부모용: 노랑 그라데이션 */
 .hd-btn--parent {
-  background-color: #FFC107; /* 이미지에 가까운 노란색 */
+  background-color: #ffa843; /* 이미지에 가까운 노란색 */
 }
 
 /* 자녀용: 보라 그라데이션 */
 .hd-btn--child {
-  background-color: #8A2BE2; /* 이미지에 가까운 보라색 */
+  background-color: #9570ff; /* 이미지에 가까운 보라색 */
   color: #fff; /* 글자색을 흰색으로 변경 */
 }
 </style>
